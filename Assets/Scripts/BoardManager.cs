@@ -24,7 +24,6 @@ public class BoardManager : MonoBehaviour
     public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textOwnKingInCheck, textStillOwnKingInCheck;
     public TMP_Text textWhiteWins, textBlackWins, textTie;
     public GameObject pawnPromotionMenu;
-    public int i = 1;
 
     // Start is called before the first frame update
     void Start()
@@ -49,14 +48,6 @@ public class BoardManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log($"BoardManager.Update()-Call {i}");
-        foreach (var el in occupiedTiles)
-        {
-            Debug.Log($"BoardManager Update {i} DICT: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-        }
-        i += 1;
-
-
         if (!readyForNextMove && !activeMenu)
         {
             GameObject activeKing;
@@ -71,14 +62,6 @@ public class BoardManager : MonoBehaviour
             kingTile = activeKing.GetComponent<PieceController>().GetTileForPosition(activeKing.transform.position);
             // check if activePlayer's king is in check/checkmate
             checkSetter = KingInCheckBy(kingTile, activePlayer);  // enemy pieces (of activePlayer) that set check
-
-
-            foreach (var el in occupiedTiles)
-            {
-                Debug.Log($"INSIDE BoardManager Update {i - 1} DICT: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-            }
-
-
             if (checkSetter.Count != 0)
             {
                 // remember that king is in check
@@ -95,48 +78,18 @@ public class BoardManager : MonoBehaviour
                     StartCoroutine(activeKing.GetComponent<PieceController>().ActivateAndDeactivate(textInCheck.gameObject, 3));
                 }
             }
-
-            foreach (var el in occupiedTiles)
-            {
-                Debug.Log($"INSIDE-2 BoardManager Update {i - 1} DICT: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-            }
-
-
-            Debug.Log("before tie-check");
-
             // check if game is tied
             if (ending == "stillRunning" && !PlayerCanMove())
             {
                 ending = "tie";
             }
-
-            Debug.Log("after tie-check");
-
-
-            foreach (var el in occupiedTiles)
-            {
-                Debug.Log($"INSIDE-3 BoardManager Update {i - 1} DICT: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-            }
-
-
-            Debug.Log("set readyForNextMove=true");
             readyForNextMove = true;
         }
-
         // check if game is over
         if (ending != "stillRunning")
         {
             DrawEndingScreen(ending);
         }
-
-
-
-        Debug.Log($"BoardManager.Update()-Call-ENDE {i - 1} folgt nach dict-Daten");
-        foreach (var el in occupiedTiles)
-        {
-            Debug.Log($"BoardManager Update {i-1} DICT: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-        }
-
     }
 
     public void ChangeActivePlayer(string oldPlayer)  
@@ -189,7 +142,6 @@ public class BoardManager : MonoBehaviour
     private bool PlayerCanMove()
     // true if currently active player can do some legal move next
     {
-        Debug.Log("PlayerCanMove()-Call  " + Time.realtimeSinceStartup);
         List<GameObject> alliedPieces;
         if (activePlayer == "white")
         {
@@ -198,23 +150,12 @@ public class BoardManager : MonoBehaviour
         {
             alliedPieces = blackPiecesList;
         }
-        Debug.Log($"alliedPieces.count = {alliedPieces.Count}    {Time.realtimeSinceStartup}");
 
         List<Vector2> possibleTargetTiles;
-
-        Debug.Log("AFTER possibleTargetTiles");
-
         foreach (GameObject piece in alliedPieces)
         {
-            /*Debug.Log($"PCM() piece: {piece} tag={piece.tag}");
-            foreach (var el in occupiedTiles)
-            {
-                Debug.Log($"PCM pair: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-            }*/
-
             if (piece == null || !piece.activeSelf)
             {
-                Debug.Log("PCM() null/destroyed object found.");
                 // "piece" was already hitted and deactivated/destroyed -> cannot move anymore
                 continue;
             }
@@ -222,19 +163,15 @@ public class BoardManager : MonoBehaviour
             possibleTargetTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
             foreach (Vector2 tile in possibleTargetTiles)
             {
-                Debug.Log("PCM() possibleTargetTile: " + tile);
                 Vector3 targetPos = new Vector3(tile.x, tile.y, piece.transform.position.z);
-                Debug.Log("PCM() before TryMove()");
                 if (piece.GetComponent<PieceController>().TryMove(targetPos, true))
                 {
-                    Debug.Log("PlayerCanMove()-End TRUE " + Time.realtimeSinceStartup);
                     return true;  // executeable move found
                 }
             }
             // "piece" cannot move -> check next allied piece
         }
         // no allied piece can move
-        Debug.Log("PlayerCanMove()-End FALSE");
         return false;
     }
 

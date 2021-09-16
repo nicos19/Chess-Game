@@ -191,8 +191,6 @@ public class PieceMovement : MonoBehaviour
         // direction: leftward = (-1, 0), rightward = (1, 0), upward = (0, 1), downward = (0, -1)
         //            diagonal = (-1, 1) / (1, 1) / (-1, -1) / (1, -1)
     {
-        Debug.Log("GetLegalToMoveTilesDirection()   " + gameObject);
-
         List<Vector2> legalTiles = new List<Vector2>();
         int dir_x = direction.x;
         int dir_y = direction.y;
@@ -202,13 +200,6 @@ public class PieceMovement : MonoBehaviour
         {
             if (boardManager.occupiedTiles.ContainsKey(newTile))
             {
-                //Debug.Log("ERROR" + boardManager.occupiedTiles[newTile] + " " + newTile);
-                foreach (var el in boardManager.occupiedTiles)
-                {
-                    Debug.Log($"ERROR pair: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-                }
-
-
                 if (boardManager.occupiedTiles[newTile].GetComponent<PieceController>().player != GetComponent<PieceController>().player)
                 {
                     // piece at newTile is enemy -> newTile is legal to move

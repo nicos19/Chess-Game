@@ -24,7 +24,6 @@ public class PieceController : MonoBehaviour
     public Sprite spriteNormal;
     public Sprite spriteHighlighted;
 
-    public int i = 1;
 
     // Start is called before the first frame update
     void Start()
@@ -147,28 +146,18 @@ public class PieceController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        foreach (var el in boardManager.occupiedTiles)
-        {
-            Debug.Log($"PieceController{gameObject} Update {i} DICT: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-        }
-        
-
-
         if (boardManager.ending != "stillRunning" || boardManager.activeMenu)
         {
-            i += 1;
             return;  // game is over or paused
         }
         if (!boardManager.readyForNextMove)
         {
-            i += 1;
             return;  // wait for BoardManager.Update()
         }
 
         // check if player just moved 
         if (boardManager.activePlayer != player)
         {
-            i += 1;
             return;  // leave update because player is not allowed to move (other player must move)
         }
 
@@ -193,40 +182,6 @@ public class PieceController : MonoBehaviour
                         (float)System.Math.Floor(mouseWorldPos.y) + boardManager.tileSize / 2, mouseWorldPos.z);
                     // MOVE!
                     TryMove(targetPos);
-
-                    /*if (boardManager.occupiedTiles.ContainsKey(GetTileForPosition(targetPos)))
-                    {
-                        // target tile is occupied by enemy -> hit (deactivate enemy's piece)
-                        GameObject otherPiece = boardManager.occupiedTiles[GetTileForPosition(targetPos)];
-                        otherPiece.SetActive(false);
-                    }
-                    boardManager.occupiedTiles[GetTileForPosition(targetPos)] = gameObject;  // update position of moved chess piece in dictionary
-                    boardManager.occupiedTiles.Remove(GetTileForPosition(transform.position));  // mark old position as empty in dictionary
-                    // check if own king would be in chess after this move
-                    if (OwnKingInChess())
-                    {
-
-                    }
-
-                    
-                    transform.position = targetPos;  // actual move
-                    DeselectPiece();
-
-                    // check if enemy's king is in chess
-                    if (PieceSetsChess(gameObject))
-                    {
-                        boardManager.textInChess.gameObject.SetActive(true);
-                        StartCoroutine(WaitAndDeactivate(3, boardManager.textInChess.gameObject));
-                        // remember that enemy's king is in chess and remember chess setting piece
-                        boardManager.inChess = true;
-                        boardManager.chessSetter = gameObject;
-                    }
-
-                    // check if enemy's king is in checkmate
-
-
-                    // other player must move next
-                    boardManager.ChangeActivePlayer(player);*/
                     break;
                 }
             }
@@ -234,7 +189,6 @@ public class PieceController : MonoBehaviour
             // TODO: Nachricht, dass Tile illegal war
 
         }
-        i += 1;
     }
 
     public bool TryMove(Vector3 targetPos, bool justTry=false)
@@ -243,7 +197,6 @@ public class PieceController : MonoBehaviour
         // wenn TryMove() called to check for checkmate/tie: 
         //       then "justTry" = true -> only try if move is possible, but do not execute it (even if possible)
     {
-        Debug.Log("TryMove()-Call");
         Vector2 kingTile = GetTileForPosition(ownKing.transform.position);
         if (gameObject.tag == "King")
         {
@@ -279,16 +232,6 @@ public class PieceController : MonoBehaviour
                 return true; 
             }
             Destroy(otherPiece);  // destroy hitted enemy piece finally
-            Debug.Log("DESTROYYYYYYYYY" + i);
-            Debug.Log("occ_tiles[" + GetTileForPosition(targetPos) + "]="  + boardManager.occupiedTiles[GetTileForPosition(targetPos)]);
-            Debug.Log("occ_tiles.count = " + boardManager.occupiedTiles.Count);
-            foreach (var el in boardManager.occupiedTiles)
-            {
-                Debug.Log($"pair: {el.Key}  {el.Value}");
-            }
-
-
-
             transform.position = targetPos;  // actual move
             DeselectPiece();
             // AFTER the move:
@@ -297,38 +240,11 @@ public class PieceController : MonoBehaviour
             boardManager.checkSetter.Clear();
             // check if pawn must be promoted
             CheckPawnPromotion(gameObject);
-
-
-            /*
-            // check if enemy's king is in chess
-            if (PieceSetsChess(gameObject))
-            {
-                // remember that enemy's king is in chess and remember chess setting piece
-                boardManager.inChess = true;
-                boardManager.chessSetter = gameObject;
-                // check if enemy's king is in checkmate
-                if (!EnemyCanMove())
-                {
-                    boardManager.ending = player + "Wins";
-                } else
-                {
-                    StartCoroutine(ActivateAndDeactivate(boardManager.textInChess.gameObject, 3));  // only check, no checkmate
-                }
-            }
-            // check if game is tied
-            if (boardManager.ending == "stillRunning" && !EnemyCanMove())
-            {
-                boardManager.ending = "tie";
-            }
-            */
-
-
             // other player must move next
             boardManager.ChangeActivePlayer(player);
             boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
         } else
         {
-            Debug.Log("TryMove() in else   " + Time.realtimeSinceStartup);
             // target tile is empty
             boardManager.occupiedTiles[GetTileForPosition(targetPos)] = gameObject;  // update position of moved chess piece in dictionary
             boardManager.occupiedTiles.Remove(GetTileForPosition(transform.position));  // mark old position as empty in dictionary
@@ -346,22 +262,9 @@ public class PieceController : MonoBehaviour
             // move is allowed -> execute move (if "justTry" = false)
             if (justTry)
             {
-                Debug.Log("PCM() in if(justTry)    " + Time.realtimeSinceStartup);
-                foreach (var el in boardManager.occupiedTiles)
-                {
-                    Debug.Log($"if(justTry) pair: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-                }
-
-
                 // move should not be executed -> reverse changes above
                 boardManager.occupiedTiles.Remove(GetTileForPosition(targetPos));
                 boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
-
-                foreach (var el in boardManager.occupiedTiles)
-                {
-                    Debug.Log($"if(justTry) pair AFTER: {el.Key}  {el.Value}  pos={el.Value.transform.position}      {Time.realtimeSinceStartup}");
-                }
-
                 return true;
             }
             transform.position = targetPos;  // actual move
@@ -372,32 +275,6 @@ public class PieceController : MonoBehaviour
             boardManager.checkSetter.Clear();
             // check if pawn must be promoted
             CheckPawnPromotion(gameObject);
-            
-
-            /*
-            // check if enemy's king is in chess
-            if (PieceSetsChess(gameObject))
-            {
-                // remember that enemy's king is in chess and remember chess setting piece
-                boardManager.inChess = true;
-                boardManager.chessSetter = gameObject;
-                // check if enemy's king is in checkmate
-                if (!EnemyCanMove())
-                {
-                    boardManager.ending = player + "Wins";
-                } else
-                {
-                    StartCoroutine(ActivateAndDeactivate(boardManager.textInChess.gameObject, 3));  // only check, no checkmate
-                }
-            }
-            // check if game is tied
-            if (boardManager.ending == "stillRunning" && !EnemyCanMove())
-            {
-                boardManager.ending = "tie";
-            }
-            */
-            
-            
             // other player must move next
             boardManager.ChangeActivePlayer(player);
             boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
@@ -436,61 +313,6 @@ public class PieceController : MonoBehaviour
     {
         return point.x >= lowerLeftCorner.x && point.x <= lowerLeftCorner.x + rectSize && point.y >= lowerLeftCorner.y && point.y <= lowerLeftCorner.y + rectSize;
     }
-
-    /*private bool PieceSetsChess(GameObject piece)  // true if enemy's king is in chess by current piece
-    {
-        List<Vector2> nextLegalTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles(); // tiles that would be reachable for piece when piece's player moves next
-        if (nextLegalTiles.Count == 0)
-        {
-            return false;
-        }
-        foreach (Vector2 tile in nextLegalTiles)
-        {
-            if (boardManager.occupiedTiles.ContainsKey(tile))
-            {
-                // reachable tile contains enemy piece
-                if (boardManager.occupiedTiles[tile].tag == "King")
-                {
-                    // enemy piece is enemy's king -> enemy's king is in chess
-                    return true;
-                }
-            }
-        }
-        return false;
-    }*/
-
-    /*public List<GameObject> KingInCheckBy(Vector2 kingTile, string attackedPlayer)
-        // returns a list of all check setter against king of "attackedPlayer" in current state
-        // returns empty list if king of "attackedPlayer" is not in check
-    {
-        List<GameObject> chessSetter = new List<GameObject>();
-        List<GameObject> enemyPiecesOfAttackedPlayer;
-        if (attackedPlayer == player)
-        {
-            enemyPiecesOfAttackedPlayer = enemyPieces;
-        } else
-        {
-            enemyPiecesOfAttackedPlayer = alliedPieces;
-        }
-
-        foreach (GameObject piece in enemyPiecesOfAttackedPlayer)
-        {
-            if (!piece.activeSelf)
-            {
-                // piece was already hitted and deactivated -> cannot cause check
-                continue;
-            }
-            List<Vector2> threatendTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
-            foreach (Vector2 tile in threatendTiles)
-            {
-                if (tile == kingTile)
-                {
-                    chessSetter.Add(piece);
-                }
-            }
-        }
-        return chessSetter;
-    }*/
 
     private void Message_KingWouldBeInCheck()
     {
