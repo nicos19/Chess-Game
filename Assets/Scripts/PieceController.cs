@@ -12,17 +12,13 @@ public class PieceController : MonoBehaviour
     private Bounds colliderBounds;
     private bool atStart;
     private List<Vector2> legalTiles;
-    private Vector2 moveDirection;
-    //private List<GameObject> alliedPieces, enemyPieces;  
+    private Vector2 moveDirection;  
     private GameObject ownKing;
-    //private string enemy;
 
     public GameObject board;
     public BoardManager boardManager;
     public Tilemap map;
     public string player;  // the player ("white" or "black") that is associated with the piece
-    public Sprite spriteNormal;
-    public Sprite spriteHighlighted;
 
 
     // Start is called before the first frame update
@@ -99,25 +95,14 @@ public class PieceController : MonoBehaviour
         {
             // no "legal to move tiles" -> piece cannot move -> player must choose other piece
             StartCoroutine(ActivateAndDeactivate(boardManager.textPieceUnmoveable.gameObject, 3));
-
-            // TODO: Display message "Tie" if player cannot move any piece
-
             return;
         }
-        GetComponent<SpriteRenderer>().sprite = spriteHighlighted;  // highlight selected piece
-        
+        // highlight tile of selected piece
+        ChangeTile(GetTileForPosition(transform.position), new TileBase[2] { boardManager.brightTileSelected, boardManager.darkTileSelected });
+        // highlight all "legal to move" tiles
         foreach (Vector2 tile in legalTiles)
         {
-            // highlight all "legal to move" tiles
-            Vector3Int tileInt = new Vector3Int((int)tile.x, (int)tile.y, 0);  // ACHTUNG: tileInt.z = 0 nur solange Tilemap z-Wert = 0 hat
-            if (map.GetTile(tileInt) == boardManager.brightTile)
-            {
-                map.SetTile(tileInt, boardManager.brightTileHighlighted);
-            }
-            else if (map.GetTile(tileInt) == boardManager.darkTile)
-            {
-                map.SetTile(tileInt, boardManager.darkTileHighlighted);
-            }
+            ChangeTile(tile, new TileBase[2] { boardManager.brightTileLegalToMove, boardManager.darkTileLegalToMove });
         }
         isSelected = true;
         boardManager.activeSelection = true;
@@ -125,23 +110,55 @@ public class PieceController : MonoBehaviour
 
     private void DeselectPiece()
     {
-        GetComponent<SpriteRenderer>().sprite = spriteNormal;  // dehighlight the selected piece
+        // dehighlight the tile of deselected piece
+        ChangeTileReverse(GetTileForPosition(transform.position));
+        // dehighlight the "legal to move" tiles
         foreach (Vector2 tile in legalTiles)
         {
-            // dehighlight the "legal to move" tiles
-            Vector3Int tileInt = new Vector3Int((int)tile.x, (int)tile.y, 0);  // ACHTUNG: tileInt.z = 0 nur solange Tilemap z-Wert = 0 hat
-            if (map.GetTile(tileInt) == boardManager.brightTileHighlighted)
-            {
-                map.SetTile(tileInt, boardManager.brightTile);
-            }
-            else if (map.GetTile(tileInt) == boardManager.darkTileHighlighted)
-            {
-                map.SetTile(tileInt, boardManager.darkTile);
-            }
+            ChangeTileReverse(tile);
         }
         isSelected = false;
         boardManager.activeSelection = false;
     } 
+
+    private void ChangeTile(Vector2 tilePos, TileBase[] newTile)
+        // replace tile at "tilePos" with newTile[0] or newTile[1] for a brighTile or a darkTile respectively
+    {
+        Vector3Int tilePosInt = new Vector3Int((int)tilePos.x, (int)tilePos.y, 0);  // WARNING: tilePos.z = 0 only if Tilemap's z-value = 0
+        if (map.GetTile(tilePosInt) == boardManager.brightTile)
+        {
+            map.SetTile(tilePosInt, newTile[0]);
+        }
+        else if (map.GetTile(tilePosInt) == boardManager.darkTile)
+        {
+            map.SetTile(tilePosInt, newTile[1]);
+        }
+        else
+        {
+            throw new System.ArgumentException("Unknown/Wrong Tile!");
+        }
+    }
+
+    private void ChangeTileReverse(Vector2 tilePos)
+        // replace tile at "tilePos" with corresponding original tile
+    {
+        Vector3Int tilePosInt = new Vector3Int((int)tilePos.x, (int)tilePos.y, 0);  // WARNING: tilePos.z = 0 only if Tilemap's z-value = 0
+        if (map.GetTile(tilePosInt) == boardManager.brightTileSelected || map.GetTile(tilePosInt) == boardManager.brightTileCheck ||
+                map.GetTile(tilePosInt) == boardManager.brightTileLastTurn || map.GetTile(tilePosInt) == boardManager.brightTileLegalToMove)
+        {
+            map.SetTile(tilePosInt, boardManager.brightTile);
+        }
+        else if (map.GetTile(tilePosInt) == boardManager.darkTileSelected || map.GetTile(tilePosInt) == boardManager.darkTileCheck ||
+                map.GetTile(tilePosInt) == boardManager.darkTileLastTurn || map.GetTile(tilePosInt) == boardManager.darkTileLegalToMove)
+        {
+            map.SetTile(tilePosInt, boardManager.darkTile);
+        }
+        else
+        {
+            throw new System.ArgumentException($"Unknown/Wrong Tile at {tilePosInt}! Found {map.GetTile(tilePosInt)}");
+        }
+    }
+
 
     // Update is called once per frame
     void Update()
@@ -232,8 +249,8 @@ public class PieceController : MonoBehaviour
                 return true; 
             }
             Destroy(otherPiece);  // destroy hitted enemy piece finally
-            transform.position = targetPos;  // actual move
             DeselectPiece();
+            transform.position = targetPos;  // actual move
             // AFTER the move:
             // remember that own king is not in chess (anymore)
             boardManager.inCheck = false;
@@ -267,8 +284,8 @@ public class PieceController : MonoBehaviour
                 boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
                 return true;
             }
-            transform.position = targetPos;  // actual move
             DeselectPiece();
+            transform.position = targetPos;  // actual move
             // AFTER the move:
             // remember that own king is not in chess (anymore)
             boardManager.inCheck = false;

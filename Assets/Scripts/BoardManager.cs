@@ -16,7 +16,8 @@ public class BoardManager : MonoBehaviour
     public bool activeMenu;  // is currently any menu open
     public List<GameObject> checkSetter;  // pieces that threaten enemy's king causing chess
     public Tilemap map;
-    public TileBase brightTile, brightTileHighlighted, darkTile, darkTileHighlighted;
+    public TileBase brightTile, brightTileSelected, brightTileCheck, brightTileLastTurn, brightTileLegalToMove,
+        darkTile, darkTileSelected, darkTileCheck, darkTileLastTurn, darkTileLegalToMove;
     public GameObject whitePieces, blackPieces;  // parent objects of all chess piece objects
     public List<GameObject> whitePiecesList, blackPiecesList;  // lists with all white/black pieces on the board
     public GameObject whiteKing, blackKing;
