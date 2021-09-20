@@ -109,7 +109,7 @@ public class BoardManager : MonoBehaviour
     // returns a list of all check setter against king of "attackedPlayer" in current state
     // returns empty list if king of "attackedPlayer" is not in check
     {
-        List<GameObject> chessSetter = new List<GameObject>();
+        List<GameObject> checkSetterLocal = new List<GameObject>();
         List<GameObject> enemyPiecesOfAttackedPlayer;
         if (attackedPlayer == "white")
         {
@@ -133,11 +133,11 @@ public class BoardManager : MonoBehaviour
             {
                 if (tile == kingTile)
                 {
-                    chessSetter.Add(piece);
+                    checkSetterLocal.Add(piece);
                 }
             }
         }
-        return chessSetter;
+        return checkSetterLocal;
     }
 
     private bool PlayerCanMove()

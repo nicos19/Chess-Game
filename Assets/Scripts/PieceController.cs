@@ -360,6 +360,100 @@ public class PieceController : MonoBehaviour
         return (player == "white" && tile.y == 7) || (player == "black" && tile.y == 0);
     }
 
+    private List<Vector2> GetLegalCastlingTiles()
+        // for king piece: get tiles that are "legal to move" by castling
+    {
+        Vector2 kingTile = GetTileForPosition(transform.position);
+        List<Vector2> castlingTiles = new List<Vector2>();
+        if (!atStart || boardManager.inCheck)
+        {
+            return castlingTiles;  // castling requirements violated -> castling not possible
+        }
+
+        Vector2 tile;
+        // long castling (left side of king)
+        for (int i = 1; i <= 4; i++)
+        {
+            tile = new Vector2(kingTile.x - i, kingTile.y);
+            if (boardManager.occupiedTiles.ContainsKey(tile)) 
+            {
+                if (boardManager.occupiedTiles[tile].tag == "Rook" && boardManager.occupiedTiles[tile].GetComponent<PieceController>().atStart)
+                {
+                    if (CastlingThroughThreat(kingTile, "long"))
+                    {
+                        break;
+                    }
+                    castlingTiles.Add(new Vector2(kingTile.x - 2, kingTile.y));  // long castling possible
+                }
+                break;
+            }
+        }
+        // short castling (right side of king)
+        for (int i = 1; i <= 3; i++)
+        {
+            tile = new Vector2(kingTile.x + i, kingTile.y);
+            if (boardManager.occupiedTiles.ContainsKey(tile))
+            {
+                if (boardManager.occupiedTiles[tile].tag == "Rook" && boardManager.occupiedTiles[tile].GetComponent<PieceController>().atStart)
+                {
+                    if (CastlingThroughThreat(kingTile, "short"))
+                    {
+                        break;
+                    }
+                    castlingTiles.Add(new Vector2(kingTile.x + 2, kingTile.y));  // short castling possible
+                }
+                break;
+            }
+        }
+
+        return castlingTiles;
+    }
+
+    private bool CastlingThroughThreat(Vector2 kingTile, string typeOfCastling)
+        // returns true if castling move (defined by king's startPos ("kingTile") and the type of castling ("long" or "short")
+        // would go through a threatend tile
+    {
+        Vector2 passedTile;  // tile that is passed by king during castling
+        List<GameObject> enemyPieces;
+        if (player == "white")
+        {
+            enemyPieces = boardManager.blackPiecesList;
+        }
+        else
+        {
+            enemyPieces = boardManager.whitePiecesList;
+        }
+
+        if (typeOfCastling == "long")
+        {
+            passedTile = new Vector2(kingTile.x - 2, kingTile.y);
+        } else  // typeOfCastling == "short"
+        {
+            passedTile = new Vector2(kingTile.x + 2, kingTile.y);
+        }
+
+        // check if any enemy piece threats "passedTile"
+        foreach (GameObject piece in enemyPieces)
+        {
+            if (piece == null || !piece.activeSelf)
+            {
+                // piece was already hitted and destroyed/deactivated -> cannot threat any tile
+                continue;
+            }
+
+            List<Vector2> threatendTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
+            foreach (Vector2 tile in threatendTiles)
+            {
+                if (tile == passedTile)
+                {
+                    return true;  // castling would go through a threatened tile
+                }
+            }
+        }
+        return false;
+    }
+
+
     private void SetActive(GameObject obj, bool newState, bool justTry)
         // activates ("newState" = true) or deactivates ("newState" = false) an object
         // if "justTry" = true: do nothing -> ensures that coroutines cannot run infinitely
