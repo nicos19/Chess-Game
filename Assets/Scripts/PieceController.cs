@@ -10,10 +10,11 @@ public class PieceController : MonoBehaviour
     private Vector3 mousePos;
     private Vector3 mouseWorldPos;
     private Bounds colliderBounds;
-    private bool atStart;
+    private bool atStart;  // whether the piece is still at its starting position (and did not move yet)
     private List<Vector2> legalTiles;
     private Vector2 moveDirection;  
     private GameObject ownKing;
+    private Dictionary<Vector2, GameObject> castling;  // for king: chances for castling
 
     public GameObject board;
     public BoardManager boardManager;
@@ -26,6 +27,7 @@ public class PieceController : MonoBehaviour
     {
         isSelected = false;
         atStart = true;
+        castling = new Dictionary<Vector2, GameObject>();
         boardManager = board.GetComponent<BoardManager>();
         map = boardManager.map;
         boardManager.occupiedTiles.Add(GetTileForPosition(transform.position), gameObject);
@@ -103,6 +105,11 @@ public class PieceController : MonoBehaviour
         foreach (Vector2 tile in legalTiles)
         {
             ChangeTile(tile, new TileBase[2] { boardManager.brightTileLegalToMove, boardManager.darkTileLegalToMove });
+        }
+        // for king: calculate possible castling moves
+        if (tag == "King")
+        {
+            castling = GetLegalCastlingTiles();
         }
         isSelected = true;
         boardManager.activeSelection = true;
@@ -183,6 +190,23 @@ public class PieceController : MonoBehaviour
         mouseWorldPos = Camera.main.ScreenToWorldPoint(mousePos);
         mouseWorldPos.z = transform.position.z;  // ACHTUNG: Muss dies angepasst werden, falls Schachfiguren und Schachbrett andere z-Werte haben?
 
+        // for king: create mouseover effect for possible castling moves
+        if (tag == "King" && isSelected)
+        {
+            foreach (KeyValuePair<Vector2, GameObject> c in castling)
+            {
+                if (RectContain(c.Key, boardManager.tileSize, new Vector2(mouseWorldPos.x, mouseWorldPos.y))) {
+                    // mouse is over a possible target tile for castling
+                    ChangeTile(GetTileForPosition(c.Value.transform.position),
+                        new TileBase[2] { boardManager.brightTileSelected, boardManager.darkTileSelected });
+                } else
+                {
+                    // mouse is not over possible target tile for castling
+                    ChangeTileReverse(GetTileForPosition(c.Value.transform.position));
+                }
+            }
+        }
+
         if (isSelected && Input.GetMouseButtonDown(0) && !colliderBounds.Contains(mouseWorldPos))
         {
             // check if clicked position is a "legal to move" tile
@@ -191,20 +215,28 @@ public class PieceController : MonoBehaviour
                 Vector2 lowerLeftCorner = new Vector2(tile.x, tile.y);
                 if (RectContain(lowerLeftCorner, boardManager.tileSize, new Vector2(mouseWorldPos.x, mouseWorldPos.y)))
                 {
-                    if (atStart)
-                    {
-                        atStart = false;
-                    }
                     Vector3 targetPos = new Vector3((float)System.Math.Floor(mouseWorldPos.x) + boardManager.tileSize / 2, 
                         (float)System.Math.Floor(mouseWorldPos.y) + boardManager.tileSize / 2, mouseWorldPos.z);
-                    // MOVE!
+                    // TRY MOVE!
                     TryMove(targetPos);
                     break;
                 }
             }
-            // player clicked illegal tile
-            // TODO: Nachricht, dass Tile illegal war
-
+            // check if castling is possible
+            if (tag == "King" && castling.Count != 0)
+            {
+                foreach (KeyValuePair<Vector2, GameObject> c in castling)
+                {
+                    if (RectContain(c.Key, boardManager.tileSize, new Vector2(mouseWorldPos.x, mouseWorldPos.y)))
+                    {
+                        Vector3 targetPos = new Vector3((float)System.Math.Floor(mouseWorldPos.x) + boardManager.tileSize / 2,
+                        (float)System.Math.Floor(mouseWorldPos.y) + boardManager.tileSize / 2, mouseWorldPos.z);
+                        // TRY CASTLING-MOVE!
+                        TryMove(targetPos);
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -215,7 +247,7 @@ public class PieceController : MonoBehaviour
         //       then "justTry" = true -> only try if move is possible, but do not execute it (even if possible)
     {
         Vector2 kingTile = GetTileForPosition(ownKing.transform.position);
-        if (gameObject.tag == "King")
+        if (tag == "King")
         {
             kingTile = GetTileForPosition(targetPos);
         } 
@@ -251,51 +283,79 @@ public class PieceController : MonoBehaviour
             Destroy(otherPiece);  // destroy hitted enemy piece finally
             DeselectPiece();
             transform.position = targetPos;  // actual move
-            // AFTER the move:
-            // remember that own king is not in chess (anymore)
-            boardManager.inCheck = false;
-            boardManager.checkSetter.Clear();
-            // check if pawn must be promoted
-            CheckPawnPromotion(gameObject);
-            // other player must move next
-            boardManager.ChangeActivePlayer(player);
-            boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
         } else
         {
-            // target tile is empty
-            boardManager.occupiedTiles[GetTileForPosition(targetPos)] = gameObject;  // update position of moved chess piece in dictionary
-            boardManager.occupiedTiles.Remove(GetTileForPosition(transform.position));  // mark old position as empty in dictionary
-            if (boardManager.KingInCheckBy(kingTile, player).Count != 0)
+            // check if castling move was selected
+            if (castling.ContainsKey(GetTileForPosition(targetPos)))
             {
-                // move not allowed since own king would be in chess afterwards -> reverse changes above
-                boardManager.occupiedTiles.Remove(GetTileForPosition(targetPos));
-                boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
-                if (!justTry)
+                GameObject rook = castling[GetTileForPosition(targetPos)];  // the rook used during castling move
+                Vector3 targetPosRook;
+                if (transform.position.x < targetPos.x)  // king wants to move rightwards during castling
                 {
-                    Message_KingWouldBeInCheck();
+                    targetPosRook = new Vector3(rook.transform.position.x - 2, rook.transform.position.y, rook.transform.position.z);
+                } else  // king wants to move leftwards during castling
+                {
+                    targetPosRook = new Vector3(rook.transform.position.x + 3, rook.transform.position.y, rook.transform.position.z);
                 }
-                return false;
-            }
-            // move is allowed -> execute move (if "justTry" = false)
-            if (justTry)
+                boardManager.occupiedTiles[GetTileForPosition(targetPos)] = gameObject;  // update occupiedTiles for king
+                boardManager.occupiedTiles.Remove(GetTileForPosition(transform.position));  // update occupiedTiles for king
+                boardManager.occupiedTiles[GetTileForPosition(targetPosRook)] = rook;  // update occupiedTiles for rook
+                boardManager.occupiedTiles.Remove(GetTileForPosition(rook.transform.position));  // update occupiedTiles for rook
+                if (boardManager.KingInCheckBy(kingTile, player).Count != 0)
+                {
+                    // move not allowed since own king would be in chess afterwards -> reverse changes above
+                    boardManager.occupiedTiles.Remove(GetTileForPosition(targetPos));
+                    boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
+                    boardManager.occupiedTiles.Remove(GetTileForPosition(targetPosRook));
+                    boardManager.occupiedTiles[GetTileForPosition(rook.transform.position)] = rook;
+                    Message_KingWouldBeInCheck();
+                    return false;
+                }
+                // move is allowed -> execute move (remark: "justTry" = true is never called for castling) 
+                DeselectPiece();
+                transform.position = targetPos;  // actual move
+            } else
             {
-                // move should not be executed -> reverse changes above
-                boardManager.occupiedTiles.Remove(GetTileForPosition(targetPos));
-                boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
-                return true;
+                // target tile is empty (no castling)
+                boardManager.occupiedTiles[GetTileForPosition(targetPos)] = gameObject;  // update position of moved chess piece in dictionary
+                boardManager.occupiedTiles.Remove(GetTileForPosition(transform.position));  // mark old position as empty in dictionary
+                if (boardManager.KingInCheckBy(kingTile, player).Count != 0)
+                {
+                    // move not allowed since own king would be in chess afterwards -> reverse changes above
+                    boardManager.occupiedTiles.Remove(GetTileForPosition(targetPos));
+                    boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
+                    if (!justTry)
+                    {
+                        Message_KingWouldBeInCheck();
+                    }
+                    return false;
+                }
+                // move is allowed -> execute move (if "justTry" = false)
+                if (justTry)
+                {
+                    // move should not be executed -> reverse changes above
+                    boardManager.occupiedTiles.Remove(GetTileForPosition(targetPos));
+                    boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
+                    return true;
+                }
+                DeselectPiece();
+                transform.position = targetPos;  // actual move
             }
-            DeselectPiece();
-            transform.position = targetPos;  // actual move
-            // AFTER the move:
-            // remember that own king is not in chess (anymore)
-            boardManager.inCheck = false;
-            boardManager.checkSetter.Clear();
-            // check if pawn must be promoted
-            CheckPawnPromotion(gameObject);
-            // other player must move next
-            boardManager.ChangeActivePlayer(player);
-            boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
         }
+
+        // AFTER the move:
+        if (atStart)
+        {
+            atStart = false;  // remember that piece is not at start position any more
+        }
+        // remember that own king is not in chess (anymore)
+        boardManager.inCheck = false;
+        boardManager.checkSetter.Clear();
+        // check if pawn must be promoted
+        CheckPawnPromotion(gameObject);
+        // other player must move next
+        boardManager.ChangeActivePlayer(player);
+        boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
         return true;
     }
 
@@ -360,11 +420,12 @@ public class PieceController : MonoBehaviour
         return (player == "white" && tile.y == 7) || (player == "black" && tile.y == 0);
     }
 
-    private List<Vector2> GetLegalCastlingTiles()
-        // for king piece: get tiles that are "legal to move" by castling
+    private Dictionary<Vector2, GameObject> GetLegalCastlingTiles()
+        // for king piece: get tiles (and corresponding rooks) that are "legal to move" by castling
+        // (key, value) = (castlingTargetTile for king, corresponding rook)
     {
         Vector2 kingTile = GetTileForPosition(transform.position);
-        List<Vector2> castlingTiles = new List<Vector2>();
+        Dictionary<Vector2, GameObject> castlingTiles = new Dictionary<Vector2, GameObject>(); ;
         if (!atStart || boardManager.inCheck)
         {
             return castlingTiles;  // castling requirements violated -> castling not possible
@@ -383,7 +444,7 @@ public class PieceController : MonoBehaviour
                     {
                         break;
                     }
-                    castlingTiles.Add(new Vector2(kingTile.x - 2, kingTile.y));  // long castling possible
+                    castlingTiles[new Vector2(kingTile.x - 2, kingTile.y)] = boardManager.occupiedTiles[tile];  // long castling possible
                 }
                 break;
             }
@@ -400,7 +461,7 @@ public class PieceController : MonoBehaviour
                     {
                         break;
                     }
-                    castlingTiles.Add(new Vector2(kingTile.x + 2, kingTile.y));  // short castling possible
+                    castlingTiles[new Vector2(kingTile.x + 2, kingTile.y)] = boardManager.occupiedTiles[tile];  // short castling possible
                 }
                 break;
             }
@@ -410,7 +471,7 @@ public class PieceController : MonoBehaviour
     }
 
     private bool CastlingThroughThreat(Vector2 kingTile, string typeOfCastling)
-        // returns true if castling move (defined by king's startPos ("kingTile") and the type of castling ("long" or "short")
+        // returns true if castling move (defined by king's startPos "kingTile" and the type of castling - "long" or "short")
         // would go through a threatend tile
     {
         Vector2 passedTile;  // tile that is passed by king during castling
@@ -426,10 +487,10 @@ public class PieceController : MonoBehaviour
 
         if (typeOfCastling == "long")
         {
-            passedTile = new Vector2(kingTile.x - 2, kingTile.y);
+            passedTile = new Vector2(kingTile.x - 1, kingTile.y);
         } else  // typeOfCastling == "short"
         {
-            passedTile = new Vector2(kingTile.x + 2, kingTile.y);
+            passedTile = new Vector2(kingTile.x + 1, kingTile.y);
         }
 
         // check if any enemy piece threats "passedTile"
