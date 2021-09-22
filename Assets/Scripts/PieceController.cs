@@ -15,6 +15,7 @@ public class PieceController : MonoBehaviour
     private Vector2 moveDirection;  
     private GameObject ownKing;
     private Dictionary<Vector2, GameObject> castling;  // for king: chances for castling
+    private Vector2 tileUnderMousePrev = new Vector2(-100, -100);  // the tile under the mouse during the previous frame
 
     public GameObject board;
     public BoardManager boardManager;
@@ -65,7 +66,7 @@ public class PieceController : MonoBehaviour
         if (boardManager.activePlayer != player && gameObject.activeSelf)
         {
             // (wrong player: the other player has to move)
-            StartCoroutine(ActivateAndDeactivate(boardManager.textWrongPlayer.gameObject, 3));
+            boardManager.StartNewIngameMessage(boardManager.textWrongPlayer.gameObject, 3);
         } else
         {
             if (!isSelected && gameObject.activeSelf)
@@ -82,13 +83,13 @@ public class PieceController : MonoBehaviour
         }
     }
 
-    public IEnumerator ActivateAndDeactivate(GameObject obj, float waitTime)
+    /*public IEnumerator ActivateAndDeactivate(GameObject obj, float waitTime)
     // this functions activates an object (especially a displayed text) and deactivates it after a delay of "waitTime" seconds
     {
         obj.SetActive(true);
         yield return new WaitForSecondsRealtime(waitTime);
         obj.SetActive(false);
-    }
+    }*/
 
     private void SelectPiece()
     {
@@ -96,7 +97,7 @@ public class PieceController : MonoBehaviour
         if (legalTiles.Count == 0)
         {
             // no "legal to move tiles" -> piece cannot move -> player must choose other piece
-            StartCoroutine(ActivateAndDeactivate(boardManager.textPieceUnmoveable.gameObject, 3));
+            boardManager.StartNewIngameMessage(boardManager.textPieceUnmoveable.gameObject, 3);
             return;
         }
         // highlight tile of selected piece
@@ -110,6 +111,10 @@ public class PieceController : MonoBehaviour
         if (tag == "King")
         {
             castling = GetLegalCastlingTiles();
+            foreach (Vector2 tile in castling.Keys)  // highlight castling tiles as "legal to move"
+            {
+                ChangeTile(tile, new TileBase[2] { boardManager.brightTileLegalToMove, boardManager.darkTileLegalToMove });
+            }
         }
         isSelected = true;
         boardManager.activeSelection = true;
@@ -123,6 +128,14 @@ public class PieceController : MonoBehaviour
         foreach (Vector2 tile in legalTiles)
         {
             ChangeTileReverse(tile);
+        }
+        // for king: dehighlight castling tiles
+        if (tag == "King")
+        {
+            foreach (Vector2 tile in castling.Keys)
+            {
+                ChangeTileReverse(tile);
+            }
         }
         isSelected = false;
         boardManager.activeSelection = false;
@@ -193,18 +206,24 @@ public class PieceController : MonoBehaviour
         // for king: create mouseover effect for possible castling moves
         if (tag == "King" && isSelected)
         {
+            Vector2 tileUnderMouse = GetTileForPosition(mouseWorldPos);
             foreach (KeyValuePair<Vector2, GameObject> c in castling)
             {
+                if (tileUnderMousePrev == new Vector2(-100, -100) || tileUnderMousePrev == tileUnderMouse)
+                {
+                    break;  // mouse position did not change 
+                }
                 if (RectContain(c.Key, boardManager.tileSize, new Vector2(mouseWorldPos.x, mouseWorldPos.y))) {
                     // mouse is over a possible target tile for castling
                     ChangeTile(GetTileForPosition(c.Value.transform.position),
                         new TileBase[2] { boardManager.brightTileSelected, boardManager.darkTileSelected });
-                } else
+                } else if (c.Key == tileUnderMousePrev)
                 {
-                    // mouse is not over possible target tile for castling
+                    // mouse was over possible target tile for castling (and is not anymore)
                     ChangeTileReverse(GetTileForPosition(c.Value.transform.position));
                 }
             }
+            tileUnderMousePrev = tileUnderMouse;
         }
 
         if (isSelected && Input.GetMouseButtonDown(0) && !colliderBounds.Contains(mouseWorldPos))
@@ -286,7 +305,7 @@ public class PieceController : MonoBehaviour
         } else
         {
             // check if castling move was selected
-            if (castling.ContainsKey(GetTileForPosition(targetPos)))
+            if (castling.ContainsKey(GetTileForPosition(targetPos)) && !justTry)
             {
                 GameObject rook = castling[GetTileForPosition(targetPos)];  // the rook used during castling move
                 Vector3 targetPosRook;
@@ -313,7 +332,9 @@ public class PieceController : MonoBehaviour
                 }
                 // move is allowed -> execute move (remark: "justTry" = true is never called for castling) 
                 DeselectPiece();
-                transform.position = targetPos;  // actual move
+                ChangeTileReverse(GetTileForPosition(rook.transform.position));  // dehighlight rook
+                transform.position = targetPos;  // actual move of king
+                rook.transform.position = targetPosRook;  // move of rook
             } else
             {
                 // target tile is empty (no castling)
@@ -395,10 +416,10 @@ public class PieceController : MonoBehaviour
     {
         if (boardManager.inCheck)
         {
-            StartCoroutine(ActivateAndDeactivate(boardManager.textStillOwnKingInCheck.gameObject, 3));
+            boardManager.StartNewIngameMessage(boardManager.textStillOwnKingInCheck.gameObject, 3);
         } else
         {
-            StartCoroutine(ActivateAndDeactivate(boardManager.textOwnKingInCheck.gameObject, 3));
+            boardManager.StartNewIngameMessage(boardManager.textOwnKingInCheck.gameObject, 3);
         }
     }
 

@@ -14,6 +14,10 @@ public class BoardManager : MonoBehaviour
     public bool activeSelection;  // is currently any piece selected
     public bool inCheck;  // is currently a king in chess
     public bool activeMenu;  // is currently any menu open
+    public bool activeIngameMessage;  // is currently some ingame message active
+    public GameObject activeText = null;  // the ingame message that is currently active
+    public IEnumerator activeCoroutine = null;  // represents currently active ingame message
+    public IEnumerator newCoroutine = null;  // represents ingame message that should be displayed next
     public List<GameObject> checkSetter;  // pieces that threaten enemy's king causing chess
     public Tilemap map;
     public TileBase brightTile, brightTileSelected, brightTileCheck, brightTileLastTurn, brightTileLegalToMove,
@@ -34,6 +38,7 @@ public class BoardManager : MonoBehaviour
         activeSelection = false;
         inCheck = false;
         activeMenu = false;
+        activeIngameMessage = false;
         checkSetter = new List<GameObject>();
 
         foreach (Transform child in whitePieces.transform)
@@ -49,6 +54,24 @@ public class BoardManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!Object.ReferenceEquals(newCoroutine, null))  // is there a new ingame message to be displayed?
+        {
+            if (activeIngameMessage)
+            {
+                // new ingame message should replace currently active message
+                StopCoroutine(activeCoroutine);
+                activeText.SetActive(false);  // remove active message
+                activeIngameMessage = false;
+                activeCoroutine = null;
+                DisplayIngameMessage(newCoroutine);  // display new message
+            } else
+            {
+                // currently no ingame message displayed
+                DisplayIngameMessage(newCoroutine);  // display new message
+            }
+        } 
+
+
         if (!readyForNextMove && !activeMenu)
         {
             GameObject activeKing;
@@ -76,7 +99,7 @@ public class BoardManager : MonoBehaviour
                 else
                 {
                     // only check, no checkmate
-                    StartCoroutine(activeKing.GetComponent<PieceController>().ActivateAndDeactivate(textInCheck.gameObject, 3));
+                    StartNewIngameMessage(textInCheck.gameObject, 3);
                 }
             }
             // check if game is tied
@@ -205,6 +228,35 @@ public class BoardManager : MonoBehaviour
         {
             throw new System.ArgumentException("ending='" + ending + "'" + " should not cause end of the game");
         }
+    }
+
+    public void DisplayIngameMessage(IEnumerator newMessage)
+    {
+        activeIngameMessage = true;
+        activeCoroutine = newMessage;
+        newCoroutine = null;
+
+        StartCoroutine(newMessage);
+    }
+
+    public void StartNewIngameMessage(GameObject text, float waitTime)
+        // tell BoardManager that a new ingame message ("text") shall be displayed (and removed from screen after "waitTime" seconds)
+    {
+        newCoroutine = ActivateAndDeactivateMessage(text, waitTime);
+    }
+
+    public IEnumerator ActivateAndDeactivateMessage(GameObject obj, float waitTime)
+    // this functions activates an object (a displayed text) and deactivates it after a delay of "waitTime" seconds
+    {
+        obj.SetActive(true);
+        activeText = obj;
+        
+        yield return new WaitForSecondsRealtime(waitTime);
+        
+        obj.SetActive(false);
+        activeIngameMessage = false;
+        activeCoroutine = null;
+        activeText = null;
     }
 
 }
