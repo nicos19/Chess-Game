@@ -14,7 +14,7 @@ public class PieceController : MonoBehaviour
     private List<Vector2> legalTiles;
     private Vector2 moveDirection;  
     private GameObject ownKing;
-    private Dictionary<Vector2, GameObject> castling;  // for king: chances for castling
+    private Dictionary<Vector2, GameObject> castling;  // for king: (key, value) = (castlingTargetTile for king, corresponding rook)
     private Vector2 tileUnderMousePrev = new Vector2(-100, -100);  // the tile under the mouse during the previous frame
 
     public GameObject board;
@@ -65,8 +65,15 @@ public class PieceController : MonoBehaviour
         yield return null;
         if (boardManager.activePlayer != player && gameObject.activeSelf)
         {
-            // (wrong player: the other player has to move)
-            boardManager.StartNewIngameMessage(boardManager.textWrongPlayer.gameObject, 3);
+            if (boardManager.activeSelection)
+            {
+                // enemy piece not reachable -> cannot be hitted by currently selected piece
+                boardManager.StartNewIngameMessage(boardManager.textEnemyNotReachable.gameObject, 3);
+            } else
+            {
+                // wrong player: enemy pieces cannot be selected
+                boardManager.StartNewIngameMessage(boardManager.textWrongPlayer.gameObject, 3);
+            }
         } else
         {
             if (!isSelected && gameObject.activeSelf)
@@ -82,14 +89,6 @@ public class PieceController : MonoBehaviour
             }
         }
     }
-
-    /*public IEnumerator ActivateAndDeactivate(GameObject obj, float waitTime)
-    // this functions activates an object (especially a displayed text) and deactivates it after a delay of "waitTime" seconds
-    {
-        obj.SetActive(true);
-        yield return new WaitForSecondsRealtime(waitTime);
-        obj.SetActive(false);
-    }*/
 
     private void SelectPiece()
     {
@@ -155,7 +154,7 @@ public class PieceController : MonoBehaviour
         }
         else
         {
-            throw new System.ArgumentException("Unknown/Wrong Tile!");
+            throw new System.ArgumentException($"Unknown/Wrong tile at {tilePosInt}! Found tile: {map.GetTile(tilePosInt)}");
         }
     }
 
@@ -175,7 +174,7 @@ public class PieceController : MonoBehaviour
         }
         else
         {
-            throw new System.ArgumentException($"Unknown/Wrong Tile at {tilePosInt}! Found {map.GetTile(tilePosInt)}");
+            throw new System.ArgumentException($"Unknown/Wrong tile at {tilePosInt}! Found tile: {map.GetTile(tilePosInt)}");
         }
     }
 
@@ -409,7 +408,7 @@ public class PieceController : MonoBehaviour
 
     public bool RectContain(Vector2 lowerLeftCorner, float rectSize, Vector2 point)
     {
-        return point.x >= lowerLeftCorner.x && point.x <= lowerLeftCorner.x + rectSize && point.y >= lowerLeftCorner.y && point.y <= lowerLeftCorner.y + rectSize;
+        return point.x > lowerLeftCorner.x && point.x < lowerLeftCorner.x + rectSize && point.y > lowerLeftCorner.y && point.y < lowerLeftCorner.y + rectSize;
     }
 
     private void Message_KingWouldBeInCheck()

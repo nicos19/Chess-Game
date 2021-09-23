@@ -26,7 +26,7 @@ public class BoardManager : MonoBehaviour
     public List<GameObject> whitePiecesList, blackPiecesList;  // lists with all white/black pieces on the board
     public GameObject whiteKing, blackKing;
     public Dictionary<Vector2, GameObject> occupiedTiles = new Dictionary<Vector2, GameObject>();  // (key, value) = (Vector2 tile, GameObject chess piece at tile)
-    public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textOwnKingInCheck, textStillOwnKingInCheck;
+    public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable;
     public TMP_Text textWhiteWins, textBlackWins, textTie;
     public GameObject pawnPromotionMenu;
 
@@ -69,8 +69,7 @@ public class BoardManager : MonoBehaviour
                 // currently no ingame message displayed
                 DisplayIngameMessage(newCoroutine);  // display new message
             }
-        } 
-
+        }
 
         if (!readyForNextMove && !activeMenu)
         {
@@ -108,6 +107,17 @@ public class BoardManager : MonoBehaviour
                 ending = "tie";
             }
             readyForNextMove = true;
+
+            // deactivate ingame messages before next players turn (except: in-check and ending-messages)
+            if (activeIngameMessage && activeText != textInCheck.gameObject 
+                && activeText != textWhiteWins.gameObject && activeText != textBlackWins.gameObject && activeText != textTie.gameObject)
+            {
+                StopCoroutine(activeCoroutine);
+                activeText.SetActive(false);
+                activeIngameMessage = false;
+                activeCoroutine = null;
+            }
+
         }
         // check if game is over
         if (ending != "stillRunning")
