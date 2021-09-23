@@ -269,4 +269,36 @@ public class BoardManager : MonoBehaviour
         activeText = null;
     }
 
+    private void RotateCamera180()
+        // Rotate Camera 180° and adjust its position so the screen shows the board correctly, also rotate all chess pieces
+    {
+        Camera.main.transform.Rotate(0, 0, 180);
+        Camera.main.transform.position = new Vector3(6.2f, 3.5f, -10);
+
+        foreach (GameObject piece in whitePiecesList)
+        {
+            piece.transform.Rotate(0, 0, 180);
+        }
+        foreach (GameObject piece in blackPiecesList)
+        {
+            piece.transform.Rotate(0, 0, 180);
+        }
+    }
+
+    private void RotateCameraOriginal()
+        // Rotate Camera back in its original state, also rotate all chess pieces back
+    {
+        Camera.main.transform.Rotate(0, 0, -180);
+        Camera.main.transform.position = new Vector3(1.8f, 4.5f, -10);
+
+        foreach (GameObject piece in whitePiecesList)
+        {
+            piece.transform.Rotate(0, 0, -180);
+        }
+        foreach (GameObject piece in blackPiecesList)
+        {
+            piece.transform.Rotate(0, 0, -180);
+        }
+    }
+
 }
