@@ -99,12 +99,18 @@ public class PieceController : MonoBehaviour
             boardManager.StartNewIngameMessage(boardManager.textPieceUnmoveable.gameObject, 3);
             return;
         }
+
+        isSelected = true;
+        boardManager.activeSelection = true;
+        boardManager.activeSelectionLegalTiles = CloneListVector2(legalTiles);
+
         // highlight tile of selected piece
-        ChangeTile(GetTileForPosition(transform.position), new TileBase[2] { boardManager.brightTileSelected, boardManager.darkTileSelected });
+        boardManager.ChangeTile(GetTileForPosition(transform.position), 
+            new TileBase[2] { boardManager.brightTileSelected, boardManager.darkTileSelected });
         // highlight all "legal to move" tiles
         foreach (Vector2 tile in legalTiles)
         {
-            ChangeTile(tile, new TileBase[2] { boardManager.brightTileLegalToMove, boardManager.darkTileLegalToMove });
+            boardManager.SetCorrectTile(tile);
         }
         // for king: calculate possible castling moves
         if (tag == "King")
@@ -112,72 +118,34 @@ public class PieceController : MonoBehaviour
             castling = GetLegalCastlingTiles();
             foreach (Vector2 tile in castling.Keys)  // highlight castling tiles as "legal to move"
             {
-                ChangeTile(tile, new TileBase[2] { boardManager.brightTileLegalToMove, boardManager.darkTileLegalToMove });
+                boardManager.activeSelectionLegalTiles.Add(tile);
+                boardManager.SetCorrectTile(tile);
             }
         }
-        isSelected = true;
-        boardManager.activeSelection = true;
     }
 
     private void DeselectPiece()
     {
+        isSelected = false;
+        boardManager.activeSelection = false;
+        boardManager.activeSelectionLegalTiles.Clear();
+
         // dehighlight the tile of deselected piece
-        ChangeTileReverse(GetTileForPosition(transform.position));
+        boardManager.SetCorrectTile(GetTileForPosition(transform.position));
         // dehighlight the "legal to move" tiles
         foreach (Vector2 tile in legalTiles)
         {
-            ChangeTileReverse(tile);
+            boardManager.SetCorrectTile(tile);
         }
         // for king: dehighlight castling tiles
         if (tag == "King")
         {
             foreach (Vector2 tile in castling.Keys)
             {
-                ChangeTileReverse(tile);
+                boardManager.SetCorrectTile(tile);
             }
         }
-        isSelected = false;
-        boardManager.activeSelection = false;
-    } 
-
-    private void ChangeTile(Vector2 tilePos, TileBase[] newTile)
-        // replace tile at "tilePos" with newTile[0] or newTile[1] for a brighTile or a darkTile respectively
-    {
-        Vector3Int tilePosInt = new Vector3Int((int)tilePos.x, (int)tilePos.y, 0);  // WARNING: tilePos.z = 0 only if Tilemap's z-value = 0
-        if (map.GetTile(tilePosInt) == boardManager.brightTile)
-        {
-            map.SetTile(tilePosInt, newTile[0]);
-        }
-        else if (map.GetTile(tilePosInt) == boardManager.darkTile)
-        {
-            map.SetTile(tilePosInt, newTile[1]);
-        }
-        else
-        {
-            throw new System.ArgumentException($"Unknown/Wrong tile at {tilePosInt}! Found tile: {map.GetTile(tilePosInt)}");
-        }
     }
-
-    private void ChangeTileReverse(Vector2 tilePos)
-        // replace tile at "tilePos" with corresponding original tile
-    {
-        Vector3Int tilePosInt = new Vector3Int((int)tilePos.x, (int)tilePos.y, 0);  // WARNING: tilePos.z = 0 only if Tilemap's z-value = 0
-        if (map.GetTile(tilePosInt) == boardManager.brightTileSelected || map.GetTile(tilePosInt) == boardManager.brightTileCheck ||
-                map.GetTile(tilePosInt) == boardManager.brightTileLastTurn || map.GetTile(tilePosInt) == boardManager.brightTileLegalToMove)
-        {
-            map.SetTile(tilePosInt, boardManager.brightTile);
-        }
-        else if (map.GetTile(tilePosInt) == boardManager.darkTileSelected || map.GetTile(tilePosInt) == boardManager.darkTileCheck ||
-                map.GetTile(tilePosInt) == boardManager.darkTileLastTurn || map.GetTile(tilePosInt) == boardManager.darkTileLegalToMove)
-        {
-            map.SetTile(tilePosInt, boardManager.darkTile);
-        }
-        else
-        {
-            throw new System.ArgumentException($"Unknown/Wrong tile at {tilePosInt}! Found tile: {map.GetTile(tilePosInt)}");
-        }
-    }
-
 
     // Update is called once per frame
     void Update()
@@ -214,12 +182,12 @@ public class PieceController : MonoBehaviour
                 }
                 if (RectContain(c.Key, boardManager.tileSize, new Vector2(mouseWorldPos.x, mouseWorldPos.y))) {
                     // mouse is over a possible target tile for castling
-                    ChangeTile(GetTileForPosition(c.Value.transform.position),
+                    boardManager.ChangeTile(GetTileForPosition(c.Value.transform.position),
                         new TileBase[2] { boardManager.brightTileSelected, boardManager.darkTileSelected });
                 } else if (c.Key == tileUnderMousePrev)
                 {
                     // mouse was over possible target tile for castling (and is not anymore)
-                    ChangeTileReverse(GetTileForPosition(c.Value.transform.position));
+                    boardManager.SetCorrectTile(GetTileForPosition(c.Value.transform.position));
                 }
             }
             tileUnderMousePrev = tileUnderMouse;
@@ -264,11 +232,14 @@ public class PieceController : MonoBehaviour
         // wenn TryMove() called to check for checkmate/tie: 
         //       then "justTry" = true -> only try if move is possible, but do not execute it (even if possible)
     {
+        Vector2 currentKingTile = GetTileForPosition(ownKing.transform.position);  // used for dehighlighting of king that was in check
         Vector2 kingTile = GetTileForPosition(ownKing.transform.position);
         if (tag == "King")
         {
             kingTile = GetTileForPosition(targetPos);
-        } 
+        }
+        Vector2 prevTile = GetTileForPosition(transform.position);
+        List<Vector2> lastMoveList = new List<Vector2>();
 
         if (boardManager.occupiedTiles.ContainsKey(GetTileForPosition(targetPos)))
         {
@@ -329,9 +300,11 @@ public class PieceController : MonoBehaviour
                     Message_KingWouldBeInCheck();
                     return false;
                 }
+                lastMoveList.Add(GetTileForPosition(rook.transform.position));
+                lastMoveList.Add(GetTileForPosition(targetPosRook));
                 // move is allowed -> execute move (remark: "justTry" = true is never called for castling) 
                 DeselectPiece();
-                ChangeTileReverse(GetTileForPosition(rook.transform.position));  // dehighlight rook
+                boardManager.SetCorrectTile(GetTileForPosition(rook.transform.position));  // dehighlight rook tile
                 transform.position = targetPos;  // actual move of king
                 rook.transform.position = targetPosRook;  // move of rook
             } else
@@ -368,14 +341,38 @@ public class PieceController : MonoBehaviour
         {
             atStart = false;  // remember that piece is not at start position any more
         }
-        // remember that own king is not in chess (anymore)
-        boardManager.inCheck = false;
-        boardManager.checkSetter.Clear();
+        if (boardManager.inCheck)
+        {
+            List<GameObject> formerCheckSetter = CloneListGameObject(boardManager.checkSetter);
+            // remember that own king is not in check anymore
+            boardManager.inCheck = false;
+            boardManager.checkSetter.Clear();
+            boardManager.textInCheck.gameObject.SetActive(false);
+            // dehighlight king (which was in check) and all former check setter
+            boardManager.SetCorrectTile(currentKingTile);
+            foreach (GameObject piece in formerCheckSetter)
+            {
+                boardManager.SetCorrectTile(GetTileForPosition(piece.transform.position));
+            }
+        }
         // check if pawn must be promoted
         CheckPawnPromotion(gameObject);
         // other player must move next
         boardManager.ChangeActivePlayer(player);
         boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
+        // remember last move (and ensure that last move is displayed correctly if required)
+        List<Vector2> oldLastMove = CloneListVector2(boardManager.lastMove);
+        lastMoveList.Add(prevTile);
+        lastMoveList.Add(GetTileForPosition(transform.position));
+        boardManager.lastMove = lastMoveList;
+        foreach (Vector2 tile in lastMoveList)
+        {
+            boardManager.SetCorrectTile(tile);
+        }
+        foreach (Vector2 tile in oldLastMove)
+        {
+            boardManager.SetCorrectTile(tile);
+        }
         return true;
     }
 
@@ -400,7 +397,7 @@ public class PieceController : MonoBehaviour
         throw new System.Exception("Chess piece has unknown tag.");
     }
 
-    public Vector2 GetTileForPosition(Vector3 worldPos) 
+    public static Vector2 GetTileForPosition(Vector3 worldPos) 
         // calculate the lower left corner coordinates of the corresponding tile for a given world position
     {
         return new Vector2((float)System.Math.Floor(worldPos.x), (float)System.Math.Floor(worldPos.y));
@@ -546,6 +543,28 @@ public class PieceController : MonoBehaviour
         {
             obj.SetActive(newState);
         }
+    }
+
+    private static List<Vector2> CloneListVector2(List<Vector2> originalList)
+        // creates a copy of "originalList"
+    {
+        List<Vector2> newList = new List<Vector2>();
+        foreach (Vector2 obj in originalList)
+        {
+            newList.Add(obj);
+        }
+        return newList;
+    }
+
+    private static List<GameObject> CloneListGameObject(List<GameObject> originalList)
+    // creates a copy of "originalList" (just copies references of the GameObjects)
+    {
+        List<GameObject> newList = new List<GameObject>();
+        foreach (GameObject obj in originalList)
+        {
+            newList.Add(obj);
+        }
+        return newList;
     }
 
 }

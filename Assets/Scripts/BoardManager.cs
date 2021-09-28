@@ -12,7 +12,8 @@ public class BoardManager : MonoBehaviour
     public string ending;  // "stillRunning" or "whiteWins" or "blackWins" or "tie"
     public bool readyForNextMove;
     public bool activeSelection;  // is currently any piece selected
-    public bool inCheck;  // is currently a king in chess
+    public List<Vector2> activeSelectionLegalTiles;  // "legalToMove" tiles of currently active selection
+    public bool inCheck;  // is currently a king in check
     public bool activeMenu;  // is currently any menu open
     public bool activeIngameMessage;  // is currently some ingame message active
     public GameObject activeText = null;  // the ingame message that is currently active
@@ -20,8 +21,15 @@ public class BoardManager : MonoBehaviour
     public IEnumerator newCoroutine = null;  // represents ingame message that should be displayed next
     public List<GameObject> checkSetter;  // pieces that threaten enemy's king causing chess
     public Tilemap map;
-    public TileBase brightTile, brightTileSelected, brightTileCheck, brightTileLastTurn, brightTileLegalToMove,
-        darkTile, darkTileSelected, darkTileCheck, darkTileLastTurn, darkTileLegalToMove;
+    public TileBase brightTile, brightTileSelected, brightTileLegalToMove, brightTileCheckSetter, brightTileInCheck,
+        brightTileLastMoveOrigin, brightTileLastMoveTarget, brightTileLastMoveTargetCheckSetter,
+        brightTileLegalToMoveLastMoveOrigin, brightTileLegalToMoveLastMoveTarget,
+        brightTileLegalToMoveCheckSetter, brightTileLegalToMoveLastMoveTargetCheckSetter,
+
+        darkTile, darkTileSelected, darkTileLegalToMove, darkTileCheckSetter, darkTileInCheck,
+        darkTileLastMoveOrigin, darkTileLastMoveTarget, darkTileLastMoveTargetCheckSetter,
+        darkTileLegalToMoveLastMoveOrigin, darkTileLegalToMoveLastMoveTarget,
+        darkTileLegalToMoveCheckSetter, darkTileLegalToMoveLastMoveTargetCheckSetter;
     public GameObject whitePieces, blackPieces;  // parent objects of all chess piece objects
     public List<GameObject> whitePiecesList, blackPiecesList;  // lists with all white/black pieces on the board
     public GameObject whiteKing, blackKing;
@@ -29,6 +37,11 @@ public class BoardManager : MonoBehaviour
     public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable;
     public TMP_Text textWhiteWins, textBlackWins, textTie;
     public GameObject pawnPromotionMenu;
+    public List<Vector2> lastMove;
+    public bool lastMoveActive;  // is the last move currently highlighted or not
+
+    private TileBase[] brightTileVariants;
+    private TileBase[] darkTileVariants;
 
     // Start is called before the first frame update
     void Start()
@@ -36,10 +49,13 @@ public class BoardManager : MonoBehaviour
         ending = "stillRunning";
         readyForNextMove = true;
         activeSelection = false;
+        activeSelectionLegalTiles = new List<Vector2>();
         inCheck = false;
         activeMenu = false;
         activeIngameMessage = false;
         checkSetter = new List<GameObject>();
+        lastMove = new List<Vector2>();
+        lastMoveActive = false;
 
         foreach (Transform child in whitePieces.transform)
         {
@@ -49,6 +65,10 @@ public class BoardManager : MonoBehaviour
         {
             blackPiecesList.Add(child.gameObject);
         }
+
+        brightTileVariants = new TileBase[] { brightTile, brightTileSelected, brightTileLegalToMove, brightTileCheckSetter, brightTileInCheck, brightTileLastMoveOrigin, brightTileLastMoveTarget, brightTileLastMoveTargetCheckSetter, brightTileLegalToMoveLastMoveOrigin, brightTileLegalToMoveLastMoveTarget, brightTileLegalToMoveCheckSetter, brightTileLegalToMoveLastMoveTargetCheckSetter };
+
+        darkTileVariants = new TileBase[] { darkTile, darkTileSelected, darkTileLegalToMove, darkTileCheckSetter, darkTileInCheck, darkTileLastMoveOrigin, darkTileLastMoveTarget, darkTileLastMoveTargetCheckSetter, darkTileLegalToMoveLastMoveOrigin, darkTileLegalToMoveLastMoveTarget, darkTileLegalToMoveCheckSetter, darkTileLegalToMoveLastMoveTargetCheckSetter };
     }
 
     // Update is called once per frame
@@ -64,11 +84,26 @@ public class BoardManager : MonoBehaviour
                 activeIngameMessage = false;
                 activeCoroutine = null;
                 DisplayIngameMessage(newCoroutine);  // display new message
-            } else
+            }
+            else
             {
                 // currently no ingame message displayed
                 DisplayIngameMessage(newCoroutine);  // display new message
             }
+        }
+
+        
+        // when "SPACE" held pressed: highlight last move
+        if (Input.GetButtonDown("Show Last Move"))
+        {
+            lastMoveActive = true;
+            ShowOrHideLastMove(true);
+        }
+        // if "SPACE" is released: dehighlight last move
+        if (Input.GetButtonUp("Show Last Move"))
+        {
+            lastMoveActive = false;
+            ShowOrHideLastMove(false);
         }
 
         if (!readyForNextMove && !activeMenu)
@@ -82,13 +117,19 @@ public class BoardManager : MonoBehaviour
             {
                 activeKing = blackKing;
             }
-            kingTile = activeKing.GetComponent<PieceController>().GetTileForPosition(activeKing.transform.position);
+            kingTile = PieceController.GetTileForPosition(activeKing.transform.position);
             // check if activePlayer's king is in check/checkmate
             checkSetter = KingInCheckBy(kingTile, activePlayer);  // enemy pieces (of activePlayer) that set check
             if (checkSetter.Count != 0)
             {
                 // remember that king is in check
                 inCheck = true;
+                // highlight king in check and all check setter
+                SetCorrectTile(kingTile);
+                foreach (GameObject piece in checkSetter)
+                {
+                    SetCorrectTile(PieceController.GetTileForPosition(piece.transform.position));
+                }
                 // check if activePlayer's king is in checkmate
                 if (!PlayerCanMove())
                 {
@@ -98,7 +139,7 @@ public class BoardManager : MonoBehaviour
                 else
                 {
                     // only check, no checkmate
-                    StartNewIngameMessage(textInCheck.gameObject, 3);
+                    textInCheck.gameObject.SetActive(true);
                 }
             }
             // check if game is tied
@@ -106,7 +147,8 @@ public class BoardManager : MonoBehaviour
             {
                 ending = "tie";
             }
-            readyForNextMove = true;
+
+            //RotateCamera();
 
             // deactivate ingame messages before next players turn (except: in-check and ending-messages)
             if (activeIngameMessage && activeText != textInCheck.gameObject 
@@ -118,6 +160,7 @@ public class BoardManager : MonoBehaviour
                 activeCoroutine = null;
             }
 
+            readyForNextMove = true;
         }
         // check if game is over
         if (ending != "stillRunning")
@@ -299,6 +342,265 @@ public class BoardManager : MonoBehaviour
         {
             piece.transform.Rotate(0, 0, -180);
         }
+    }
+
+    private void RotateCamera()
+    {
+        if (Camera.main.transform.position.y == 4.5f)
+        {
+            // rotate from original position 180°
+            RotateCamera180();
+        } else if (Camera.main.transform.position.y == 3.5f)
+        {
+            // rotate back to original position
+            RotateCameraOriginal();
+        } else
+        {
+            throw new System.Exception($"Unknown/Wrong Camera position/rotation. Camera.postion.y == {Camera.main.transform.position.y}");
+        }
+    }
+
+    public void ChangeTile(Vector2 tilePos, TileBase[] newTile)
+    // replace tile at "tilePos" with newTile[0] or newTile[1] for a brightTile variant or a darkTile variant respectively
+    {
+        Vector3Int tilePosInt = new Vector3Int((int)tilePos.x, (int)tilePos.y, 0);  // WARNING: tilePos.z = 0 only if Tilemap's z-value = 0
+        if (System.Array.Exists(brightTileVariants, element => element.Equals(map.GetTile(tilePosInt))))
+        {
+            map.SetTile(tilePosInt, newTile[0]);
+        }
+        else if (System.Array.Exists(darkTileVariants, element => element.Equals(map.GetTile(tilePosInt))))
+        {
+            map.SetTile(tilePosInt, newTile[1]);
+        }
+        else
+        {
+            throw new System.ArgumentException($"Unknown/Wrong tile at {tilePosInt}! Found tile: {map.GetTile(tilePosInt)}");
+        }
+    }
+
+    public void SetCorrectTile(Vector2 tilePos)
+    // replace tile at "tilePos" with correct tile regarding current state of the chess game
+    {
+        Vector3Int tilePosInt = new Vector3Int((int)tilePos.x, (int)tilePos.y, 0);  // WARNING: tilePos.z = 0 only if Tilemap's z-value = 0
+
+        if (System.Array.Exists(brightTileVariants, element => element.Equals(map.GetTile(tilePosInt))))  // tile is bright
+        {
+            if (activeSelectionLegalTiles.Contains(tilePos))  // tile is "legalToMove"
+            {
+                if (CheckSetterAt(tilePos))  // tile has a checkSetter 
+                {
+                    if (WasLastMoveTarget(tilePos))  // tile was target of last move
+                    {
+                        map.SetTile(tilePosInt, brightTileLegalToMoveLastMoveTarget);
+                    } else  // tile was not part of last move (since it cannot have been origin of last move)
+                    {
+                        map.SetTile(tilePosInt, brightTileLegalToMoveCheckSetter);
+                    }
+                } else  // tile has no checkSetter
+                {
+                    if (WasLastMoveOrigin(tilePos))  // tile was origin of last move
+                    {
+                        map.SetTile(tilePosInt, brightTileLegalToMoveLastMoveOrigin);
+                    } else if (WasLastMoveTarget(tilePos))  // tile was target of last Move
+                    {
+                        map.SetTile(tilePosInt, brightTileLegalToMoveLastMoveTarget);
+                    } else  // tile was not part of last move
+                    {
+                        map.SetTile(tilePosInt, brightTileLegalToMove);
+                    }
+                }
+            } else  // tile is not "legalToMove"
+            {
+                if (CheckSetterAt(tilePos))  // tile has a checkSetter 
+                {
+                    if (WasLastMoveTarget(tilePos))  // tile was target of last move
+                    {
+                        map.SetTile(tilePosInt, brightTileLastMoveTarget);
+                    } else  // tile was not part of last move (since it cannot have been origin of last move)
+                    {
+                        map.SetTile(tilePosInt, brightTileCheckSetter);
+                    }
+                } else  // tile has no checkSetter
+                {
+                    if (WasLastMoveOrigin(tilePos))  // tile was origin of last move
+                    {
+                        map.SetTile(tilePosInt, brightTileLastMoveOrigin);
+                    } else if (WasLastMoveTarget(tilePos))  // tile was target of last Move
+                    {
+                        map.SetTile(tilePosInt, brightTileLastMoveTarget);
+                    } else if ((activePlayer == "white" && PieceController.GetTileForPosition(whiteKing.transform.position) == tilePos) ||
+                        (activePlayer == "black" && PieceController.GetTileForPosition(blackKing.transform.position) == tilePos))
+                    {
+                        if (inCheck)  // tile has a king inCheck
+                        {
+                            map.SetTile(tilePosInt, brightTileInCheck);
+                        } else
+                        {
+                            map.SetTile(tilePosInt, brightTile);
+                        }
+                    }
+                    else  
+                    {
+                        map.SetTile(tilePosInt, brightTile);
+                    }
+                }
+            }
+        }
+        else if (System.Array.Exists(darkTileVariants, element => element.Equals(map.GetTile(tilePosInt))))  // tile is dark
+        {
+            if (activeSelectionLegalTiles.Contains(tilePos))  // tile is "legalToMove"
+            {
+                if (CheckSetterAt(tilePos))  // tile has a checkSetter 
+                {
+                    if (WasLastMoveTarget(tilePos))  // tile was target of last move
+                    {
+                        map.SetTile(tilePosInt, darkTileLegalToMoveLastMoveTarget);
+                    } else  // tile was not part of last move (since it cannot have been origin of last move)
+                    {
+                        map.SetTile(tilePosInt, darkTileLegalToMoveCheckSetter);
+                    }
+                } else  // tile has no checkSetter
+                {
+                    if (WasLastMoveOrigin(tilePos))  // tile was origin of last move
+                    {
+                        map.SetTile(tilePosInt, darkTileLegalToMoveLastMoveOrigin);
+                    } else if (WasLastMoveTarget(tilePos))  // tile was target of last Move
+                    {
+                        map.SetTile(tilePosInt, darkTileLegalToMoveLastMoveTarget);
+                    } else  // tile was not part of last move
+                    {
+                        map.SetTile(tilePosInt, darkTileLegalToMove);
+                    }
+                }
+            } else  // tile is not "legalToMove"
+            {
+                if (CheckSetterAt(tilePos))  // tile has a checkSetter 
+                {
+                    if (WasLastMoveTarget(tilePos))  // tile was target of last move
+                    {
+                        map.SetTile(tilePosInt, darkTileLastMoveTarget);
+                    } else  // tile was not part of last move (since it cannot have been origin of last move)
+                    {
+                        map.SetTile(tilePosInt, darkTileCheckSetter);
+                    }
+                } else  // tile has no checkSetter
+                {
+                    if (WasLastMoveOrigin(tilePos))  // tile was origin of last move
+                    {
+                        map.SetTile(tilePosInt, darkTileLastMoveOrigin);
+                    }
+                    else if (WasLastMoveTarget(tilePos))  // tile was target of last Move
+                    {
+                        map.SetTile(tilePosInt, darkTileLastMoveTarget);
+                    } else if ((activePlayer == "white" && PieceController.GetTileForPosition(whiteKing.transform.position) == tilePos) ||
+                      (activePlayer == "black" && PieceController.GetTileForPosition(blackKing.transform.position) == tilePos))
+                    {
+                        if (inCheck)  // tile has a king inCheck
+                        {
+                            map.SetTile(tilePosInt, darkTileInCheck);
+                        } else
+                        {
+                            map.SetTile(tilePosInt, darkTile);
+                        }
+                    } else
+                    {
+                        map.SetTile(tilePosInt, darkTile);
+                    }
+                }
+            }
+        }
+        else
+        {
+            throw new System.ArgumentException($"Unknown/Wrong tile at {tilePosInt}! Found tile: {map.GetTile(tilePosInt)}");
+        }
+    }
+
+    private void ShowOrHideLastMove(bool show)
+        // highlight ("show" = true) or dehighlight ("show" = false) tiles that were part of the last move
+    {
+        if (!show)
+        {
+            // dehighlight last move
+            if (lastMove.Count == 2)
+            {
+                SetCorrectTile(lastMove[0]);
+                SetCorrectTile(lastMove[1]);
+            }
+            else if (lastMove.Count == 4)  // last move was a castling move
+            {
+                SetCorrectTile(lastMove[0]);
+                SetCorrectTile(lastMove[1]);
+                SetCorrectTile(lastMove[2]);
+                SetCorrectTile(lastMove[3]);
+            }
+        } else
+        {
+            // highlight last move
+            if (lastMove.Count == 2)
+            {
+                SetCorrectTile(lastMove[0]);
+                SetCorrectTile(lastMove[1]);
+            }
+            else if (lastMove.Count == 4)  // last move was a castling move
+            {
+                SetCorrectTile(lastMove[0]);
+                SetCorrectTile(lastMove[1]);
+                SetCorrectTile(lastMove[2]);
+                SetCorrectTile(lastMove[3]);
+            }
+        }
+    }
+
+    private bool CheckSetterAt(Vector2 tile)
+        // returns true if there is a checkSetter at "tile"
+    {
+        foreach (GameObject piece in checkSetter)
+        {
+            if (PieceController.GetTileForPosition(piece.transform.position) == tile)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool WasLastMoveOrigin(Vector2 tile)
+        // returns true if "tile" was the origin of the lastMove made in the game
+        // (if lastMoveActive = false, then always return false)
+    {
+        if (!lastMoveActive)
+        {
+            return false;
+        }
+
+        if (lastMove.Count == 2)
+        {
+            return lastMove[0] == tile;
+        } else if (lastMove.Count == 4)
+        {
+            return lastMove[0] == tile || lastMove[2] == tile;
+        }
+        return false;
+    }
+
+    private bool WasLastMoveTarget(Vector2 tile)
+        // returns true if "tile" was the target of the lastMove made in the game
+        // (if lastMoveActive = false, then always return false)
+    {
+        if (!lastMoveActive)
+        {
+            return false;
+        }
+
+        if (lastMove.Count == 2)
+        {
+            return lastMove[1] == tile;
+        }
+        else if (lastMove.Count == 4)
+        {
+            return lastMove[1] == tile || lastMove[3] == tile;
+        }
+        return false;
     }
 
 }

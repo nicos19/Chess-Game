@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: DarkTale
+  m_Name: darkTile_OtherPlayerPrev
   m_EditorClassIdentifier: 
-  m_Sprite: {fileID: 21300000, guid: b2d058fceede3634da3efd85cc45cce3, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 18345740eba39cd4a94f361a064b2245, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Transform:
     e00: 1

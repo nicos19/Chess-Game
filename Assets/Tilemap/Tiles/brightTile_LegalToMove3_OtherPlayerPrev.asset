@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: BrightTaleHighlighted
+  m_Name: brightTile_LegalToMove3_OtherPlayerPrev
   m_EditorClassIdentifier: 
-  m_Sprite: {fileID: 21300000, guid: 41e8169f5363dac4da5715b4a62b0b03, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d90b749ba506ad14fa62d067586d108d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Transform:
     e00: 1

@@ -2755,6 +2755,7 @@ MonoBehaviour:
   ending: 
   readyForNextMove: 0
   activeSelection: 0
+  activeSelectionLegalTiles: []
   inCheck: 0
   activeMenu: 0
   activeIngameMessage: 0
@@ -2763,14 +2764,28 @@ MonoBehaviour:
   map: {fileID: 685147048}
   brightTile: {fileID: 11400000, guid: 39d20cceb9c644442a7f17b03d2a2e9c, type: 2}
   brightTileSelected: {fileID: 11400000, guid: 315c95785bcbf124c964b735e4ccc6ca, type: 2}
-  brightTileCheck: {fileID: 0}
-  brightTileLastTurn: {fileID: 0}
   brightTileLegalToMove: {fileID: 11400000, guid: 0bc32d11a9b63064ea755d9877b9c1eb, type: 2}
+  brightTileCheckSetter: {fileID: 11400000, guid: 7ea75ec6b4d261a46a457cd36692ed1b, type: 2}
+  brightTileInCheck: {fileID: 11400000, guid: a5d31a8b3f646ec4b837ec51f84deeb0, type: 2}
+  brightTileLastMoveOrigin: {fileID: 11400000, guid: b707cd136c3db0e42b030b26f51641b5, type: 2}
+  brightTileLastMoveTarget: {fileID: 11400000, guid: c0d3d0590c998b541a7edab3223a44c8, type: 2}
+  brightTileLastMoveTargetCheckSetter: {fileID: 11400000, guid: 8fca12fc4d8c5ec498a3dcb5d21d9e7f, type: 2}
+  brightTileLegalToMoveLastMoveOrigin: {fileID: 11400000, guid: 3bf41b4f2a6380a49988bc523fb79caa, type: 2}
+  brightTileLegalToMoveLastMoveTarget: {fileID: 11400000, guid: 914fea5839cf01c478f6dd573db777f0, type: 2}
+  brightTileLegalToMoveCheckSetter: {fileID: 11400000, guid: 56c006728252d5145a767088612f8a13, type: 2}
+  brightTileLegalToMoveLastMoveTargetCheckSetter: {fileID: 11400000, guid: ab57663d071a1ec41a7ada0c9d07a778, type: 2}
   darkTile: {fileID: 11400000, guid: 3789167fc6f7910469c57a51c0af7f87, type: 2}
   darkTileSelected: {fileID: 11400000, guid: fd4d8ec11f2d72146b3d0b21a7349fe0, type: 2}
-  darkTileCheck: {fileID: 0}
-  darkTileLastTurn: {fileID: 0}
   darkTileLegalToMove: {fileID: 11400000, guid: 182deecb48697ba4f8d94ab7db24331c, type: 2}
+  darkTileCheckSetter: {fileID: 11400000, guid: 3ba192f4a5153fe4397b662a9e29306e, type: 2}
+  darkTileInCheck: {fileID: 11400000, guid: e880886f3c756144ab39a828d1fb9a11, type: 2}
+  darkTileLastMoveOrigin: {fileID: 11400000, guid: 45e46cde95c19564794c0d3b53c49652, type: 2}
+  darkTileLastMoveTarget: {fileID: 11400000, guid: 187d3a4683bbeb045b3f2fe48db62a0c, type: 2}
+  darkTileLastMoveTargetCheckSetter: {fileID: 11400000, guid: c524c4e6ebe02d346a151b1c3a5b598b, type: 2}
+  darkTileLegalToMoveLastMoveOrigin: {fileID: 11400000, guid: db4ad0744d3b3034c971975464dacd81, type: 2}
+  darkTileLegalToMoveLastMoveTarget: {fileID: 11400000, guid: 0f9221acd5f93db4bbba85b2630311d8, type: 2}
+  darkTileLegalToMoveCheckSetter: {fileID: 11400000, guid: 56769893072af814688f6d974a497a0e, type: 2}
+  darkTileLegalToMoveLastMoveTargetCheckSetter: {fileID: 11400000, guid: 6a0f05d20d898c845818bd941d56e0d5, type: 2}
   whitePieces: {fileID: 1121470915}
   blackPieces: {fileID: 2064366575}
   whitePiecesList: []
@@ -2787,6 +2802,8 @@ MonoBehaviour:
   textBlackWins: {fileID: 2145531800}
   textTie: {fileID: 1103983164}
   pawnPromotionMenu: {fileID: 591224002}
+  lastMove: []
+  lastMoveActive: 0
 --- !u!4 &953397346
 Transform:
   m_ObjectHideFlags: 0

@@ -79,8 +79,8 @@ public class ClickToPromotePawn : MonoBehaviour
         newPiece.GetComponent<PieceController>().player = player;
 
         // update "occupiedTiles" -> remove pawn
-        Vector2 tile = newPiece.GetComponent<PieceController>().GetTileForPosition(newPiece.transform.position);
-        board.GetComponent<BoardManager>().occupiedTiles.Remove(tile);
+        board.GetComponent<BoardManager>().occupiedTiles.Remove(
+            PieceController.GetTileForPosition(newPiece.transform.position));
     }
 
 }
