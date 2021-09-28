@@ -20,6 +20,8 @@ public class BoardManager : MonoBehaviour
     public IEnumerator activeCoroutine = null;  // represents currently active ingame message
     public IEnumerator newCoroutine = null;  // represents ingame message that should be displayed next
     public List<GameObject> checkSetter;  // pieces that threaten enemy's king causing chess
+    public List<Vector2> lastMove;
+    public bool lastMoveActive;  // is the last move currently highlighted or not
     public Tilemap map;
     public TileBase brightTile, brightTileSelected, brightTileLegalToMove, brightTileCheckSetter, brightTileInCheck,
         brightTileLastMoveOrigin, brightTileLastMoveTarget, brightTileLastMoveTargetCheckSetter,
@@ -37,8 +39,12 @@ public class BoardManager : MonoBehaviour
     public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable;
     public TMP_Text textWhiteWins, textBlackWins, textTie;
     public GameObject pawnPromotionMenu;
-    public List<Vector2> lastMove;
-    public bool lastMoveActive;  // is the last move currently highlighted or not
+    public GameObject moveSoundEffectObject;
+    public GameObject hitSoundEffectObject;
+    public GameObject selectSoundEffectObject;
+    public GameObject errorSoundEffectObject;
+    public GameObject winSoundEffectObject;
+    public GameObject tieSoundEffectObject;
 
     private TileBase[] brightTileVariants;
     private TileBase[] darkTileVariants;
@@ -135,6 +141,7 @@ public class BoardManager : MonoBehaviour
                 {
                     // checkmate
                     ending = EnemyOfActivePlayer() + "Wins";
+                    StartCoroutine(EndingSoundEffect(winSoundEffectObject, 0));
                 }
                 else
                 {
@@ -146,6 +153,7 @@ public class BoardManager : MonoBehaviour
             if (ending == "stillRunning" && !PlayerCanMove())
             {
                 ending = "tie";
+                StartCoroutine(EndingSoundEffect(tieSoundEffectObject, 0));
             }
 
             //RotateCamera();
@@ -295,11 +303,12 @@ public class BoardManager : MonoBehaviour
     public void StartNewIngameMessage(GameObject text, float waitTime)
         // tell BoardManager that a new ingame message ("text") shall be displayed (and removed from screen after "waitTime" seconds)
     {
+        errorSoundEffectObject.GetComponent<AudioSource>().Play();
         newCoroutine = ActivateAndDeactivateMessage(text, waitTime);
     }
 
     public IEnumerator ActivateAndDeactivateMessage(GameObject obj, float waitTime)
-    // this functions activates an object (a displayed text) and deactivates it after a delay of "waitTime" seconds
+        // this functions activates an object (a displayed text) and deactivates it after a delay of "waitTime" seconds
     {
         obj.SetActive(true);
         activeText = obj;
@@ -310,6 +319,13 @@ public class BoardManager : MonoBehaviour
         activeIngameMessage = false;
         activeCoroutine = null;
         activeText = null;
+    }
+
+    public IEnumerator EndingSoundEffect(GameObject soundEffectObject, float delay)
+        // after "delay" seconds: play given ending sound effect
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        soundEffectObject.GetComponent<AudioSource>().Play();
     }
 
     private void RotateCamera180()

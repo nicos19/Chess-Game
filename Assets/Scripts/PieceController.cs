@@ -16,6 +16,9 @@ public class PieceController : MonoBehaviour
     private GameObject ownKing;
     private Dictionary<Vector2, GameObject> castling;  // for king: (key, value) = (castlingTargetTile for king, corresponding rook)
     private Vector2 tileUnderMousePrev = new Vector2(-100, -100);  // the tile under the mouse during the previous frame
+    private AudioSource moveSoundEffect;
+    private AudioSource hitSoundEffect;
+    private AudioSource selectSoundEffect;
 
     public GameObject board;
     public BoardManager boardManager;
@@ -32,6 +35,9 @@ public class PieceController : MonoBehaviour
         boardManager = board.GetComponent<BoardManager>();
         map = boardManager.map;
         boardManager.occupiedTiles.Add(GetTileForPosition(transform.position), gameObject);
+        moveSoundEffect = boardManager.moveSoundEffectObject.GetComponent<AudioSource>();
+        hitSoundEffect = boardManager.hitSoundEffectObject.GetComponent<AudioSource>();
+        selectSoundEffect = boardManager.selectSoundEffectObject.GetComponent<AudioSource>();
 
         if (player == "white")
         {
@@ -81,11 +87,13 @@ public class PieceController : MonoBehaviour
                 if (!boardManager.activeSelection)
                 {
                     SelectPiece();
+                    selectSoundEffect.Play();
                 }
             }
             else if(isSelected && gameObject.activeSelf)
             {
                 DeselectPiece();
+                selectSoundEffect.Play();
             }
         }
     }
@@ -272,6 +280,7 @@ public class PieceController : MonoBehaviour
             Destroy(otherPiece);  // destroy hitted enemy piece finally
             DeselectPiece();
             transform.position = targetPos;  // actual move
+            hitSoundEffect.Play();
         } else
         {
             // check if castling move was selected
@@ -307,6 +316,7 @@ public class PieceController : MonoBehaviour
                 boardManager.SetCorrectTile(GetTileForPosition(rook.transform.position));  // dehighlight rook tile
                 transform.position = targetPos;  // actual move of king
                 rook.transform.position = targetPosRook;  // move of rook
+                moveSoundEffect.Play();
             } else
             {
                 // target tile is empty (no castling)
@@ -333,6 +343,7 @@ public class PieceController : MonoBehaviour
                 }
                 DeselectPiece();
                 transform.position = targetPos;  // actual move
+                moveSoundEffect.Play();
             }
         }
 
