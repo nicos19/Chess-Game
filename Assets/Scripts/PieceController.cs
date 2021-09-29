@@ -368,9 +368,6 @@ public class PieceController : MonoBehaviour
         }
         // check if pawn must be promoted
         CheckPawnPromotion(gameObject);
-        // other player must move next
-        boardManager.ChangeActivePlayer(player);
-        boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
         // remember last move (and ensure that last move is displayed correctly if required)
         List<Vector2> oldLastMove = CloneListVector2(boardManager.lastMove);
         lastMoveList.Add(prevTile);
@@ -384,6 +381,12 @@ public class PieceController : MonoBehaviour
         {
             boardManager.SetCorrectTile(tile);
         }
+        // document last move
+        boardManager.DocumentMove(boardManager.lastMove, Application.persistentDataPath + "/allMoves.txt");
+        boardManager.DocumentMove(boardManager.lastMove, Application.dataPath + "/allMoves.txt");
+        // other player must move next
+        boardManager.ChangeActivePlayer(player);
+        boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
         return true;
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using TMPro;
+using System.IO;
 
 public class BoardManager : MonoBehaviour
 {
@@ -52,6 +53,9 @@ public class BoardManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        File.WriteAllText(Application.persistentDataPath + "/allMoves.txt", "");
+        File.WriteAllText(Application.dataPath + "/allMoves.txt", "");
+
         ending = "stillRunning";
         readyForNextMove = true;
         activeSelection = false;
@@ -617,6 +621,46 @@ public class BoardManager : MonoBehaviour
             return lastMove[1] == tile || lastMove[3] == tile;
         }
         return false;
+    }
+
+    public void DocumentMove(List<Vector2> move, string filePath)
+        // document the last made move in the file represented by "filePath"
+    {
+        string path = filePath;
+        if (!File.Exists(path))
+        {
+            File.WriteAllText(path, "");  // create new empty file
+        }
+
+        string newLine;
+        if (move.Count == 2)
+        {
+            newLine = $"{activePlayer}\t{move[0]}->{move[1]}\t\t{TilePositionAsString(move[0])}->{TilePositionAsString(move[1])}\n";
+        } else  // (move.Count == 4)
+        {
+            newLine = $"{activePlayer}\t{move[0]}->{move[1]}, {move[2]}->{move[3]}" +
+                $"\t\t{TilePositionAsString(move[0])}->{TilePositionAsString(move[1])}, {TilePositionAsString(move[2])}->{TilePositionAsString(move[3])}\n";
+        }
+        File.AppendAllText(path, newLine);  // add last move
+    }
+
+    private string TilePositionAsString(Vector2 tile)
+        // returns string representation of a tile's position, e.g. (0, 0) => A1
+    {
+        string tileX = tile.x switch
+        {
+            0 => "A",
+            1 => "B",
+            2 => "C",
+            3 => "D",
+            4 => "E",
+            5 => "F",
+            6 => "G",
+            7 => "H",
+            _ => "UnknownX-Position",
+        };
+        string tileY = (tile.y + 1).ToString();
+        return tileX + tileY;
     }
 
 }
