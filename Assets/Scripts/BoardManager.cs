@@ -37,8 +37,9 @@ public class BoardManager : MonoBehaviour
     public List<GameObject> whitePiecesList, blackPiecesList;  // lists with all white/black pieces on the board
     public GameObject whiteKing, blackKing;
     public Dictionary<Vector2, GameObject> occupiedTiles = new Dictionary<Vector2, GameObject>();  // (key, value) = (Vector2 tile, GameObject chess piece at tile)
-    public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable;
+    public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textNoCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable;
     public TMP_Text textWhiteWins, textBlackWins, textTie;
+    public GameObject spaceForLastMove;
     public GameObject pawnPromotionMenu;
     public GameObject moveSoundEffectObject;
     public GameObject hitSoundEffectObject;
@@ -118,6 +119,8 @@ public class BoardManager : MonoBehaviour
 
         if (!readyForNextMove && !activeMenu)
         {
+            textNoCheck.gameObject.SetActive(true);
+
             GameObject activeKing;
             Vector2 kingTile;
             if (activePlayer == "white")
@@ -132,6 +135,7 @@ public class BoardManager : MonoBehaviour
             checkSetter = KingInCheckBy(kingTile, activePlayer);  // enemy pieces (of activePlayer) that set check
             if (checkSetter.Count != 0)
             {
+                textNoCheck.gameObject.SetActive(false);
                 // remember that king is in check
                 inCheck = true;
                 // highlight king in check and all check setter
@@ -278,6 +282,8 @@ public class BoardManager : MonoBehaviour
     public void DrawEndingScreen(string ending)
         // Game is over. Draw the ending screen.
     {
+        spaceForLastMove.SetActive(false);
+
         if (ending == "whiteWins")
         {
             textWhiteWins.gameObject.SetActive(true);
