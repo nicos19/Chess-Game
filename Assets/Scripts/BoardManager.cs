@@ -323,7 +323,7 @@ public class BoardManager : MonoBehaviour
         obj.SetActive(true);
         activeText = obj;
         
-        yield return new WaitForSecondsRealtime(waitTime);
+        yield return new WaitForSeconds(waitTime);
         
         obj.SetActive(false);
         activeIngameMessage = false;
@@ -334,7 +334,7 @@ public class BoardManager : MonoBehaviour
     public IEnumerator EndingSoundEffect(GameObject soundEffectObject, float delay)
         // after "delay" seconds: play given ending sound effect
     {
-        yield return new WaitForSecondsRealtime(delay);
+        yield return new WaitForSeconds(delay);
         soundEffectObject.GetComponent<AudioSource>().Play();
     }
 
