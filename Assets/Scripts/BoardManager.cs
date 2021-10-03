@@ -41,12 +41,8 @@ public class BoardManager : MonoBehaviour
     public TMP_Text textWhiteWins, textBlackWins, textTie;
     public GameObject spaceForLastMove;
     public GameObject pawnPromotionMenu;
-    public GameObject moveSoundEffectObject;
-    public GameObject hitSoundEffectObject;
-    public GameObject selectSoundEffectObject;
-    public GameObject errorSoundEffectObject;
-    public GameObject winSoundEffectObject;
-    public GameObject tieSoundEffectObject;
+    public GameObject ingameMessages;
+    public IngameMessagesManager ingameMessagesManager;
 
     private TileBase[] brightTileVariants;
     private TileBase[] darkTileVariants;
@@ -67,6 +63,7 @@ public class BoardManager : MonoBehaviour
         checkSetter = new List<GameObject>();
         lastMove = new List<Vector2>();
         lastMoveActive = false;
+        ingameMessagesManager = ingameMessages.GetComponent<IngameMessagesManager>();
 
         foreach (Transform child in whitePieces.transform)
         {
@@ -94,12 +91,12 @@ public class BoardManager : MonoBehaviour
                 activeText.SetActive(false);  // remove active message
                 activeIngameMessage = false;
                 activeCoroutine = null;
-                DisplayIngameMessage(newCoroutine);  // display new message
+                ingameMessagesManager.DisplayIngameMessage(newCoroutine);  // display new message
             }
             else
             {
                 // currently no ingame message displayed
-                DisplayIngameMessage(newCoroutine);  // display new message
+                ingameMessagesManager.DisplayIngameMessage(newCoroutine);  // display new message
             }
         }
 
@@ -149,7 +146,7 @@ public class BoardManager : MonoBehaviour
                 {
                     // checkmate
                     ending = EnemyOfActivePlayer() + "Wins";
-                    StartCoroutine(EndingSoundEffect(winSoundEffectObject, 0));
+                    StartCoroutine(AudioManager.Instance.PlayEndingSoundEffect("win", 0));
                 }
                 else
                 {
@@ -161,7 +158,7 @@ public class BoardManager : MonoBehaviour
             if (ending == "stillRunning" && !PlayerCanMove())
             {
                 ending = "tie";
-                StartCoroutine(EndingSoundEffect(tieSoundEffectObject, 0));
+                StartCoroutine(AudioManager.Instance.PlayEndingSoundEffect("tie", 0));
             }
 
             //RotateCamera();
@@ -299,43 +296,6 @@ public class BoardManager : MonoBehaviour
         {
             throw new System.ArgumentException("ending='" + ending + "'" + " should not cause end of the game");
         }
-    }
-
-    public void DisplayIngameMessage(IEnumerator newMessage)
-    {
-        activeIngameMessage = true;
-        activeCoroutine = newMessage;
-        newCoroutine = null;
-
-        StartCoroutine(newMessage);
-    }
-
-    public void StartNewIngameMessage(GameObject text, float waitTime)
-        // tell BoardManager that a new ingame message ("text") shall be displayed (and removed from screen after "waitTime" seconds)
-    {
-        errorSoundEffectObject.GetComponent<AudioSource>().Play();
-        newCoroutine = ActivateAndDeactivateMessage(text, waitTime);
-    }
-
-    public IEnumerator ActivateAndDeactivateMessage(GameObject obj, float waitTime)
-        // this functions activates an object (a displayed text) and deactivates it after a delay of "waitTime" seconds
-    {
-        obj.SetActive(true);
-        activeText = obj;
-        
-        yield return new WaitForSeconds(waitTime);
-        
-        obj.SetActive(false);
-        activeIngameMessage = false;
-        activeCoroutine = null;
-        activeText = null;
-    }
-
-    public IEnumerator EndingSoundEffect(GameObject soundEffectObject, float delay)
-        // after "delay" seconds: play given ending sound effect
-    {
-        yield return new WaitForSeconds(delay);
-        soundEffectObject.GetComponent<AudioSource>().Play();
     }
 
     private void RotateCamera180()
