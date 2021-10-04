@@ -39,6 +39,7 @@ public class BoardManager : MonoBehaviour
     public Dictionary<Vector2, GameObject> occupiedTiles = new Dictionary<Vector2, GameObject>();  // (key, value) = (Vector2 tile, GameObject chess piece at tile)
     public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textNoCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable;
     public TMP_Text textWhiteWins, textBlackWins, textTie;
+    public GameObject whitesTurn, blacksTurn;
     public GameObject spaceForLastMove;
     public GameObject pawnPromotionMenu;
     public GameObject ingameMessages;
@@ -188,9 +189,13 @@ public class BoardManager : MonoBehaviour
         if (oldPlayer == "white")
         {
             activePlayer = "black";
+            blacksTurn.SetActive(true);
+            whitesTurn.SetActive(false);
         } else
         {
             activePlayer = "white";
+            whitesTurn.SetActive(true);
+            blacksTurn.SetActive(false);
         }
     }
 

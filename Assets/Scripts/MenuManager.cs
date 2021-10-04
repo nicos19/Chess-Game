@@ -4,32 +4,27 @@ using UnityEngine;
 
 public class MenuManager : MonoBehaviour
 {
-    public static bool gamePaused;
+    public static MenuManager Instance;  // represents singleton of MenuManager class
+
+    public bool gameRunning;
+    public bool gamePaused;
     public GameObject settingsMenu;
+    public GameObject creditsScreen;
 
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
-        gamePaused = false;
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-    public void OpenSettingsMenu()
-    {
-        Time.timeScale = 0;
-        gamePaused = true;
-        settingsMenu.SetActive(true);
-    }
-
-    public void CloseSettingsMenu()
-    {
-        Time.timeScale = 1;
-        gamePaused = false;
-        settingsMenu.SetActive(false);
+        if (Instance == null)
+        {
+            // create singleton
+            Instance = this;
+            gameRunning = false;
+            // unity shall not destroy the attached gameObject
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (Instance != this)
+        {
+            // singleton already created -> destroy gameObject the new script instance (this) is attached to
+            Destroy(gameObject);
+        }
     }
 }
