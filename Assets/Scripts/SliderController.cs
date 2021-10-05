@@ -14,10 +14,11 @@ public class SliderController : MonoBehaviour
         valueText.text = ((int)Mathf.Floor(gameObject.GetComponent<Slider>().value * 100)).ToString();
     }
 
-    public void OnSliderChanged(float value)
-        // is called when slider recognizes a value change
+    public void MusicSliderChanged(float value)
+        // is called when music slider recognizes a value change: sets music volume to "value"
     {
         valueText.text = ((int)Mathf.Floor(value * 100)).ToString();
+        AudioManager.Instance.SetMusicVolume(value);
     }
 
 }

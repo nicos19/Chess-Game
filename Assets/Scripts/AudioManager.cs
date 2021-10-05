@@ -6,6 +6,7 @@ public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance;  // represents singleton of AudioManager class
 
+    public GameObject backgroundMusicObject;
     public GameObject moveSoundEffectObject;
     public GameObject hitSoundEffectObject;
     public GameObject selectSoundEffectObject;
@@ -28,6 +29,23 @@ public class AudioManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
+    public void SetMusicVolume(float volume)
+    {
+        backgroundMusicObject.GetComponent<AudioSource>().volume = volume;
+    }
+
+    public void ToggleSoundEffects(bool value)
+        // if "value" = false => mute all sound effects, else unmute them
+    {
+        moveSoundEffectObject.GetComponent<AudioSource>().mute = !value;
+        hitSoundEffectObject.GetComponent<AudioSource>().mute = !value;
+        selectSoundEffectObject.GetComponent<AudioSource>().mute = !value;
+        errorSoundEffectObject.GetComponent<AudioSource>().mute = !value;
+        winSoundEffectObject.GetComponent<AudioSource>().mute = !value;
+        tieSoundEffectObject.GetComponent<AudioSource>().mute = !value;
+    }
+
 
     public void PlayMoveSoundEffect()
     {

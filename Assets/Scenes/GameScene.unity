@@ -6477,6 +6477,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2319222df02f80942afe835f62cc2efe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  backgroundMusicObject: {fileID: 0}
   moveSoundEffectObject: {fileID: 224612008}
   hitSoundEffectObject: {fileID: 1073115721}
   selectSoundEffectObject: {fileID: 233614000}
