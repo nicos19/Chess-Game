@@ -11,7 +11,7 @@ public class PieceMovement : MonoBehaviour
     public GameObject board;
 
     // Start is called before the first frame update
-    void Start()
+    public void Start()
     {
         pieceController = GetComponent<PieceController>();
         boardManager = board.GetComponent<BoardManager>();
@@ -196,6 +196,7 @@ public class PieceMovement : MonoBehaviour
         int dir_y = direction.y;
 
         Vector2 newTile = new Vector2(currentTile.x + tileSize * dir_x, currentTile.y + tileSize * dir_y);
+
         while (TileInBounce(newTile, boardManager.boardSize, tileSize))
         {
             if (boardManager.occupiedTiles.ContainsKey(newTile))

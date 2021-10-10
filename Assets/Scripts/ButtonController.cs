@@ -36,12 +36,24 @@ public class ButtonController : MonoBehaviour
 
     public void BackToMainMenu()
     {
+        if (MenuManager.Instance.gamePaused)
+        {
+            // pawn promotion menu / settings menu is open -> do not go back to main menu
+            return;
+        }
+
         MenuManager.Instance.gameRunning = false;
         SceneManager.LoadSceneAsync("MainMenu");
     }
 
     public void OpenSettingsMenu()
     {
+        if (MenuManager.Instance.gamePaused)
+        {
+            // pawn promotion menu is open -> do not open settings menu
+            return;
+        }
+
         if (MenuManager.Instance.gameRunning)
         {
             Time.timeScale = 0;

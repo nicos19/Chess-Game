@@ -24,14 +24,21 @@ public class PieceController : MonoBehaviour
 
 
     // Start is called before the first frame update
-    void Start()
+    public void Start()
     {
         isSelected = false;
         atStart = true;
         castling = new Dictionary<Vector2, GameObject>();
         boardManager = board.GetComponent<BoardManager>();
         map = boardManager.map;
-        boardManager.occupiedTiles.Add(GetTileForPosition(transform.position), gameObject);
+
+        if (!boardManager.occupiedTiles.ContainsKey(GetTileForPosition(transform.position)))
+        {
+            // after a piece is created by pawn promotion, Start() was called already during promotion process
+            // therefore the key might be added already -> only add key if it is not in the dictionary yet
+            boardManager.occupiedTiles.Add(GetTileForPosition(transform.position), gameObject);
+            Debug.Log($"occ_tile at Start: {GetTileForPosition(transform.position)}");
+        }
 
         if (player == "white")
         {
@@ -46,7 +53,7 @@ public class PieceController : MonoBehaviour
 
     private void OnMouseDown() // when chess piece is clicked then select or deselect piece
     {
-        if (boardManager.ending != "stillRunning" || boardManager.activeMenu)
+        if (boardManager.ending != "stillRunning" || MenuManager.Instance.gamePaused)
         {
             return;  // game is over or paused 
         }
@@ -152,7 +159,7 @@ public class PieceController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (boardManager.ending != "stillRunning" || boardManager.activeMenu)
+        if (boardManager.ending != "stillRunning" || MenuManager.Instance.gamePaused)
         {
             return;  // game is over or paused
         }
@@ -255,7 +262,7 @@ public class PieceController : MonoBehaviour
                 // move not allowed since own king would be in chess afterwards -> reverse changes above
                 SetActive(otherPiece, true, justTry);
                 boardManager.occupiedTiles[GetTileForPosition(targetPos)] = otherPiece;
-                boardManager.occupiedTiles[transform.position] = gameObject;
+                boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
                 if (!justTry)
                 {
                     Message_KingWouldBeInCheck();
@@ -268,13 +275,23 @@ public class PieceController : MonoBehaviour
                 // move should not be executed -> reverse changes above
                 SetActive(otherPiece, true, justTry);
                 boardManager.occupiedTiles[GetTileForPosition(targetPos)] = otherPiece;
-                boardManager.occupiedTiles[transform.position] = gameObject;
+                boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
                 return true; 
             }
             Destroy(otherPiece);  // destroy hitted enemy piece finally
             DeselectPiece();
             transform.position = targetPos;  // actual move
             AudioManager.Instance.PlayHitSoundEffect();
+
+
+
+            foreach (Vector2 occ_tile in boardManager.occupiedTiles.Keys)
+            {
+                Debug.Log($"occ_tile: {occ_tile}");
+            }
+
+
+
         } else
         {
             // check if castling move was selected
@@ -325,6 +342,14 @@ public class PieceController : MonoBehaviour
                     {
                         Message_KingWouldBeInCheck();
                     }
+
+
+                    foreach (Vector2 occ_tile in boardManager.occupiedTiles.Keys)
+                    {
+                        Debug.Log($"ERROR occ_tile: {occ_tile}");
+                    }
+
+
                     return false;
                 }
                 // move is allowed -> execute move (if "justTry" = false)
@@ -338,6 +363,14 @@ public class PieceController : MonoBehaviour
                 DeselectPiece();
                 transform.position = targetPos;  // actual move
                 AudioManager.Instance.PlayMoveSoundEffect();
+
+
+
+                foreach (Vector2 occ_tile in boardManager.occupiedTiles.Keys)
+                {
+                    Debug.Log($"occ_tile: {occ_tile}");
+                }
+
             }
         }
 
@@ -436,7 +469,7 @@ public class PieceController : MonoBehaviour
         // promotion
         boardManager.pawnPromotionMenu.SetActive(true);  // open menu to select promotion for pawn
         boardManager.pawnPromotionMenu.GetComponent<ClickToPromotePawn>().pawnToPromote = piece;
-        boardManager.activeMenu = true;
+        MenuManager.Instance.gamePaused = true;
     }
 
     private bool IsPromotionTile(Vector2 tile, string player)
@@ -460,7 +493,7 @@ public class PieceController : MonoBehaviour
         // long castling (left side of king)
         for (int i = 1; i <= 4; i++)
         {
-            tile = new Vector2(kingTile.x - i, kingTile.y);
+            tile = new Vector2(Mathf.Round(kingTile.x - i), kingTile.y);
             if (boardManager.occupiedTiles.ContainsKey(tile)) 
             {
                 if (boardManager.occupiedTiles[tile].tag == "Rook" && boardManager.occupiedTiles[tile].GetComponent<PieceController>().atStart)
@@ -469,7 +502,7 @@ public class PieceController : MonoBehaviour
                     {
                         break;
                     }
-                    castlingTiles[new Vector2(kingTile.x - 2, kingTile.y)] = boardManager.occupiedTiles[tile];  // long castling possible
+                    castlingTiles[new Vector2(Mathf.Round(kingTile.x - 2), kingTile.y)] = boardManager.occupiedTiles[tile];  // long castling possible
                 }
                 break;
             }
@@ -477,7 +510,7 @@ public class PieceController : MonoBehaviour
         // short castling (right side of king)
         for (int i = 1; i <= 3; i++)
         {
-            tile = new Vector2(kingTile.x + i, kingTile.y);
+            tile = new Vector2(Mathf.Round(kingTile.x + i), kingTile.y);
             if (boardManager.occupiedTiles.ContainsKey(tile))
             {
                 if (boardManager.occupiedTiles[tile].tag == "Rook" && boardManager.occupiedTiles[tile].GetComponent<PieceController>().atStart)
@@ -486,7 +519,7 @@ public class PieceController : MonoBehaviour
                     {
                         break;
                     }
-                    castlingTiles[new Vector2(kingTile.x + 2, kingTile.y)] = boardManager.occupiedTiles[tile];  // short castling possible
+                    castlingTiles[new Vector2(Mathf.Round(kingTile.x + 2), kingTile.y)] = boardManager.occupiedTiles[tile];  // short castling possible
                 }
                 break;
             }
@@ -512,10 +545,10 @@ public class PieceController : MonoBehaviour
 
         if (typeOfCastling == "long")
         {
-            passedTile = new Vector2(kingTile.x - 1, kingTile.y);
+            passedTile = new Vector2(Mathf.Round(kingTile.x - 1), kingTile.y);
         } else  // typeOfCastling == "short"
         {
-            passedTile = new Vector2(kingTile.x + 1, kingTile.y);
+            passedTile = new Vector2(Mathf.Round(kingTile.x + 1), kingTile.y);
         }
 
         // check if any enemy piece threats "passedTile"

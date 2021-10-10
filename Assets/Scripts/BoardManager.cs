@@ -15,7 +15,6 @@ public class BoardManager : MonoBehaviour
     public bool activeSelection;  // is currently any piece selected
     public List<Vector2> activeSelectionLegalTiles;  // "legalToMove" tiles of currently active selection
     public bool inCheck;  // is currently a king in check
-    public bool activeMenu;  // is currently any menu open
     public bool activeIngameMessage;  // is currently some ingame message active
     public GameObject activeText = null;  // the ingame message that is currently active
     public IEnumerator activeCoroutine = null;  // represents currently active ingame message
@@ -59,7 +58,6 @@ public class BoardManager : MonoBehaviour
         activeSelection = false;
         activeSelectionLegalTiles = new List<Vector2>();
         inCheck = false;
-        activeMenu = false;
         activeIngameMessage = false;
         checkSetter = new List<GameObject>();
         lastMove = new List<Vector2>();
@@ -115,7 +113,7 @@ public class BoardManager : MonoBehaviour
             ShowOrHideLastMove(false);
         }
 
-        if (!readyForNextMove && !activeMenu)
+        if (!readyForNextMove && !MenuManager.Instance.gamePaused)
         {
             textNoCheck.gameObject.SetActive(true);
 
@@ -228,9 +226,32 @@ public class BoardManager : MonoBehaviour
                 if (tile == kingTile)
                 {
                     checkSetterLocal.Add(piece);
+                    
+                    
+                    /*Debug.Log($"{piece} threats {tile}, kingTile = {kingTile}");
+                    foreach (Vector2 t in piece.GetComponent<PieceController>().GetLegalToMoveTiles())
+                    {
+                        Debug.Log($"legalToMove for strange pawn: {t}");
+                    }
+                    foreach (Vector2 occ_tile in occupiedTiles.Keys)
+                    {
+                        Debug.Log($"occ_tile: {occ_tile}");
+                    }*/
+
+
+                    
                 }
             }
         }
+
+
+
+        foreach (Vector2 occ_tile in occupiedTiles.Keys)
+        {
+            Debug.Log($"ERROR_KingInCheck occ_tile: {occ_tile}");
+        }
+
+
         return checkSetterLocal;
     }
 
@@ -258,11 +279,35 @@ public class BoardManager : MonoBehaviour
             possibleTargetTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
             foreach (Vector2 tile in possibleTargetTiles)
             {
-                Vector3 targetPos = new Vector3(tile.x, tile.y, piece.transform.position.z);
+                Vector3 targetPos = new Vector3(tile.x + tileSize / 2, tile.y + tileSize / 2, piece.transform.position.z);
+
+
+                foreach (Vector2 occ_tile in occupiedTiles.Keys)
+                {
+                    Debug.Log($"ERROR_PlayerCanMove_BeforeTryMove({piece}, {targetPos}) occ_tile: {occ_tile}");
+                }
+
+
                 if (piece.GetComponent<PieceController>().TryMove(targetPos, true))
                 {
+
+                    foreach (Vector2 occ_tile in occupiedTiles.Keys)
+                    {
+                        Debug.Log($"ERROR_PlayerCanMoveTRUE({piece}, {targetPos}) occ_tile: {occ_tile}");
+                    }
+
+
+
                     return true;  // executeable move found
                 }
+
+
+                foreach (Vector2 occ_tile in occupiedTiles.Keys)
+                {
+                    Debug.Log($"ERROR_PlayerCanMoveFALSE({piece}, {targetPos}) occ_tile: {occ_tile}");
+                }
+
+
             }
             // "piece" cannot move -> check next allied piece
         }

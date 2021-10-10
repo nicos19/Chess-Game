@@ -103,7 +103,7 @@ public class ClickToPromotePawn : MonoBehaviour
         // close promotion menu
         board.GetComponent<BoardManager>().pawnPromotionMenu.SetActive(false);
         board.GetComponent<BoardManager>().pawnPromotionMenu.GetComponent<ClickToPromotePawn>().pawnToPromote = null;
-        board.GetComponent<BoardManager>().activeMenu = false;
+        MenuManager.Instance.gamePaused = false;
     }
 
     public void InitializePiece(GameObject newPiece, string player)
@@ -111,6 +111,10 @@ public class ClickToPromotePawn : MonoBehaviour
     {
         newPiece.GetComponent<PieceController>().board = board;
         newPiece.GetComponent<PieceController>().player = player;
+        newPiece.GetComponent<PieceMovement>().board = board;
+
+        newPiece.GetComponent<PieceController>().Start();
+        newPiece.GetComponent<PieceMovement>().Start();
     }
 
 }
