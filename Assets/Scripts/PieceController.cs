@@ -21,6 +21,7 @@ public class PieceController : MonoBehaviour
     public BoardManager boardManager;
     public Tilemap map;
     public string player;  // the player ("white" or "black") that is associated with the piece
+    public bool activeOnJustTry;  // is the piece active during a TryMove(justTry=true) call
 
 
     // Start is called before the first frame update
@@ -31,13 +32,13 @@ public class PieceController : MonoBehaviour
         castling = new Dictionary<Vector2, GameObject>();
         boardManager = board.GetComponent<BoardManager>();
         map = boardManager.map;
+        activeOnJustTry = true;
 
         if (!boardManager.occupiedTiles.ContainsKey(GetTileForPosition(transform.position)))
         {
             // after a piece is created by pawn promotion, Start() was called already during promotion process
             // therefore the key might be added already -> only add key if it is not in the dictionary yet
             boardManager.occupiedTiles.Add(GetTileForPosition(transform.position), gameObject);
-            Debug.Log($"occ_tile at Start: {GetTileForPosition(transform.position)}");
         }
 
         if (player == "white")
@@ -282,16 +283,6 @@ public class PieceController : MonoBehaviour
             DeselectPiece();
             transform.position = targetPos;  // actual move
             AudioManager.Instance.PlayHitSoundEffect();
-
-
-
-            foreach (Vector2 occ_tile in boardManager.occupiedTiles.Keys)
-            {
-                Debug.Log($"occ_tile: {occ_tile}");
-            }
-
-
-
         } else
         {
             // check if castling move was selected
@@ -342,14 +333,6 @@ public class PieceController : MonoBehaviour
                     {
                         Message_KingWouldBeInCheck();
                     }
-
-
-                    foreach (Vector2 occ_tile in boardManager.occupiedTiles.Keys)
-                    {
-                        Debug.Log($"ERROR occ_tile: {occ_tile}");
-                    }
-
-
                     return false;
                 }
                 // move is allowed -> execute move (if "justTry" = false)
@@ -363,14 +346,6 @@ public class PieceController : MonoBehaviour
                 DeselectPiece();
                 transform.position = targetPos;  // actual move
                 AudioManager.Instance.PlayMoveSoundEffect();
-
-
-
-                foreach (Vector2 occ_tile in boardManager.occupiedTiles.Keys)
-                {
-                    Debug.Log($"occ_tile: {occ_tile}");
-                }
-
             }
         }
 
@@ -575,10 +550,11 @@ public class PieceController : MonoBehaviour
 
     private void SetActive(GameObject obj, bool newState, bool justTry)
         // activates ("newState" = true) or deactivates ("newState" = false) an object
-        // if "justTry" = true: do nothing -> ensures that coroutines cannot run infinitely
+        // if "justTry" = true: do not really deactivate an object -> ensures that coroutines cannot run infinitely
     {
         if (justTry)
         {
+            obj.GetComponent<PieceController>().activeOnJustTry = newState;
             return;
         } else
         {

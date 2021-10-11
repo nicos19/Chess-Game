@@ -214,7 +214,7 @@ public class BoardManager : MonoBehaviour
 
         foreach (GameObject piece in enemyPiecesOfAttackedPlayer)
         {
-            if (piece == null || !piece.activeSelf)
+            if (piece == null || !piece.activeSelf || !piece.GetComponent<PieceController>().activeOnJustTry)
             {
                 // piece was already hitted and destroyed/deactivated -> cannot cause check
                 continue;
@@ -226,31 +226,9 @@ public class BoardManager : MonoBehaviour
                 if (tile == kingTile)
                 {
                     checkSetterLocal.Add(piece);
-                    
-                    
-                    /*Debug.Log($"{piece} threats {tile}, kingTile = {kingTile}");
-                    foreach (Vector2 t in piece.GetComponent<PieceController>().GetLegalToMoveTiles())
-                    {
-                        Debug.Log($"legalToMove for strange pawn: {t}");
-                    }
-                    foreach (Vector2 occ_tile in occupiedTiles.Keys)
-                    {
-                        Debug.Log($"occ_tile: {occ_tile}");
-                    }*/
-
-
-                    
                 }
             }
         }
-
-
-
-        foreach (Vector2 occ_tile in occupiedTiles.Keys)
-        {
-            Debug.Log($"ERROR_KingInCheck occ_tile: {occ_tile}");
-        }
-
 
         return checkSetterLocal;
     }
@@ -281,33 +259,10 @@ public class BoardManager : MonoBehaviour
             {
                 Vector3 targetPos = new Vector3(tile.x + tileSize / 2, tile.y + tileSize / 2, piece.transform.position.z);
 
-
-                foreach (Vector2 occ_tile in occupiedTiles.Keys)
-                {
-                    Debug.Log($"ERROR_PlayerCanMove_BeforeTryMove({piece}, {targetPos}) occ_tile: {occ_tile}");
-                }
-
-
                 if (piece.GetComponent<PieceController>().TryMove(targetPos, true))
                 {
-
-                    foreach (Vector2 occ_tile in occupiedTiles.Keys)
-                    {
-                        Debug.Log($"ERROR_PlayerCanMoveTRUE({piece}, {targetPos}) occ_tile: {occ_tile}");
-                    }
-
-
-
                     return true;  // executeable move found
                 }
-
-
-                foreach (Vector2 occ_tile in occupiedTiles.Keys)
-                {
-                    Debug.Log($"ERROR_PlayerCanMoveFALSE({piece}, {targetPos}) occ_tile: {occ_tile}");
-                }
-
-
             }
             // "piece" cannot move -> check next allied piece
         }
