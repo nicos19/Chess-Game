@@ -11,11 +11,11 @@ public class PieceController : MonoBehaviour
     private Vector3 mouseWorldPos;
     private Bounds colliderBounds;
     private bool atStart;  // whether the piece is still at its starting position (and did not move yet)
-    private List<Vector2> legalTiles;
-    private Vector2 moveDirection;  
+    private List<Vector2Int> legalTiles;
+    private Vector2Int moveDirection;  
     private GameObject ownKing;
-    private Dictionary<Vector2, GameObject> castling;  // for king: (key, value) = (castlingTargetTile for king, corresponding rook)
-    private Vector2 tileUnderMousePrev = new Vector2(-100, -100);  // the tile under the mouse during the previous frame
+    private Dictionary<Vector2Int, GameObject> castling;  // for king: (key, value) = (castlingTargetTile for king, corresponding rook)
+    private Vector2Int tileUnderMousePrev = new Vector2Int(-100, -100);  // the tile under the mouse during the previous frame
 
     public GameObject board;
     public BoardManager boardManager;
@@ -29,7 +29,7 @@ public class PieceController : MonoBehaviour
     {
         isSelected = false;
         atStart = true;
-        castling = new Dictionary<Vector2, GameObject>();
+        castling = new Dictionary<Vector2Int, GameObject>();
         boardManager = board.GetComponent<BoardManager>();
         map = boardManager.map;
         activeOnJustTry = true;
@@ -43,11 +43,11 @@ public class PieceController : MonoBehaviour
 
         if (player == "white")
         {
-            moveDirection = new Vector2(0, 1);
+            moveDirection = new Vector2Int(0, 1);
             ownKing = boardManager.whiteKing;
         } else if (player == "black")
         {
-            moveDirection = new Vector2(0, -1);
+            moveDirection = new Vector2Int(0, -1);
             ownKing = boardManager.blackKing;
         }
     }
@@ -118,7 +118,7 @@ public class PieceController : MonoBehaviour
         boardManager.ChangeTile(GetTileForPosition(transform.position), 
             new TileBase[2] { boardManager.brightTileSelected, boardManager.darkTileSelected });
         // highlight all "legal to move" tiles
-        foreach (Vector2 tile in legalTiles)
+        foreach (Vector2Int tile in legalTiles)
         {
             boardManager.SetCorrectTile(tile);
         }
@@ -126,7 +126,7 @@ public class PieceController : MonoBehaviour
         if (tag == "King")
         {
             castling = GetLegalCastlingTiles();
-            foreach (Vector2 tile in castling.Keys)  // highlight castling tiles as "legal to move"
+            foreach (Vector2Int tile in castling.Keys)  // highlight castling tiles as "legal to move"
             {
                 boardManager.activeSelectionLegalTiles.Add(tile);
                 boardManager.SetCorrectTile(tile);
@@ -143,14 +143,14 @@ public class PieceController : MonoBehaviour
         // dehighlight the tile of deselected piece
         boardManager.SetCorrectTile(GetTileForPosition(transform.position));
         // dehighlight the "legal to move" tiles
-        foreach (Vector2 tile in legalTiles)
+        foreach (Vector2Int tile in legalTiles)
         {
             boardManager.SetCorrectTile(tile);
         }
         // for king: dehighlight castling tiles
         if (tag == "King")
         {
-            foreach (Vector2 tile in castling.Keys)
+            foreach (Vector2Int tile in castling.Keys)
             {
                 boardManager.SetCorrectTile(tile);
             }
@@ -183,10 +183,10 @@ public class PieceController : MonoBehaviour
         // for king: create mouseover effect for possible castling moves
         if (tag == "King" && isSelected)
         {
-            Vector2 tileUnderMouse = GetTileForPosition(mouseWorldPos);
-            foreach (KeyValuePair<Vector2, GameObject> c in castling)
+            Vector2Int tileUnderMouse = GetTileForPosition(mouseWorldPos);
+            foreach (KeyValuePair<Vector2Int, GameObject> c in castling)
             {
-                if (tileUnderMousePrev == new Vector2(-100, -100) || tileUnderMousePrev == tileUnderMouse)
+                if (tileUnderMousePrev == new Vector2Int(-100, -100) || tileUnderMousePrev == tileUnderMouse)
                 {
                     break;  // mouse position did not change 
                 }
@@ -206,13 +206,13 @@ public class PieceController : MonoBehaviour
         if (isSelected && Input.GetMouseButtonDown(0) && !colliderBounds.Contains(mouseWorldPos))
         {
             // check if clicked position is a "legal to move" tile
-            foreach (Vector3 tile in legalTiles)
+            foreach (Vector2Int tile in legalTiles)
             {
-                Vector2 lowerLeftCorner = new Vector2(tile.x, tile.y);
+                Vector2Int lowerLeftCorner = new Vector2Int(tile.x, tile.y);
                 if (RectContain(lowerLeftCorner, boardManager.tileSize, new Vector2(mouseWorldPos.x, mouseWorldPos.y)))
                 {
-                    Vector3 targetPos = new Vector3((float)System.Math.Floor(mouseWorldPos.x) + boardManager.tileSize / 2, 
-                        (float)System.Math.Floor(mouseWorldPos.y) + boardManager.tileSize / 2, mouseWorldPos.z);
+                    Vector3 targetPos = new Vector3((float)System.Math.Floor(mouseWorldPos.x) + (float)boardManager.tileSize / 2, 
+                        (float)System.Math.Floor(mouseWorldPos.y) + (float)boardManager.tileSize / 2, mouseWorldPos.z);
                     // TRY MOVE!
                     TryMove(targetPos);
                     break;
@@ -221,12 +221,12 @@ public class PieceController : MonoBehaviour
             // check if castling is possible
             if (tag == "King" && castling.Count != 0)
             {
-                foreach (KeyValuePair<Vector2, GameObject> c in castling)
+                foreach (KeyValuePair<Vector2Int, GameObject> c in castling)
                 {
                     if (RectContain(c.Key, boardManager.tileSize, new Vector2(mouseWorldPos.x, mouseWorldPos.y)))
                     {
-                        Vector3 targetPos = new Vector3((float)System.Math.Floor(mouseWorldPos.x) + boardManager.tileSize / 2,
-                        (float)System.Math.Floor(mouseWorldPos.y) + boardManager.tileSize / 2, mouseWorldPos.z);
+                        Vector3 targetPos = new Vector3((float)System.Math.Floor(mouseWorldPos.x) + (float)boardManager.tileSize / 2,
+                            (float)System.Math.Floor(mouseWorldPos.y) + (float)boardManager.tileSize / 2, mouseWorldPos.z);
                         // TRY CASTLING-MOVE!
                         TryMove(targetPos);
                         break;
@@ -242,14 +242,14 @@ public class PieceController : MonoBehaviour
         // wenn TryMove() called to check for checkmate/tie: 
         //       then "justTry" = true -> only try if move is possible, but do not execute it (even if possible)
     {
-        Vector2 currentKingTile = GetTileForPosition(ownKing.transform.position);  // used for dehighlighting of king that was in check
-        Vector2 kingTile = GetTileForPosition(ownKing.transform.position);
+        Vector2Int currentKingTile = GetTileForPosition(ownKing.transform.position);  // used for dehighlighting of king that was in check
+        Vector2Int kingTile = GetTileForPosition(ownKing.transform.position);
         if (tag == "King")
         {
             kingTile = GetTileForPosition(targetPos);
         }
-        Vector2 prevTile = GetTileForPosition(transform.position);
-        List<Vector2> lastMoveList = new List<Vector2>();
+        Vector2Int prevTile = GetTileForPosition(transform.position);
+        List<Vector2Int> lastMoveList = new List<Vector2Int>();
 
         if (boardManager.occupiedTiles.ContainsKey(GetTileForPosition(targetPos)))
         {
@@ -371,15 +371,15 @@ public class PieceController : MonoBehaviour
         // check if pawn must be promoted
         CheckPawnPromotion(gameObject);
         // remember last move (and ensure that last move is displayed correctly if required)
-        List<Vector2> oldLastMove = CloneListVector2(boardManager.lastMove);
+        List<Vector2Int> oldLastMove = CloneListVector2(boardManager.lastMove);
         lastMoveList.Add(prevTile);
         lastMoveList.Add(GetTileForPosition(transform.position));
         boardManager.lastMove = lastMoveList;
-        foreach (Vector2 tile in lastMoveList)
+        foreach (Vector2Int tile in lastMoveList)
         {
             boardManager.SetCorrectTile(tile);
         }
-        foreach (Vector2 tile in oldLastMove)
+        foreach (Vector2Int tile in oldLastMove)
         {
             boardManager.SetCorrectTile(tile);
         }
@@ -392,7 +392,7 @@ public class PieceController : MonoBehaviour
         return true;
     }
 
-    public List<Vector2> GetLegalToMoveTiles() 
+    public List<Vector2Int> GetLegalToMoveTiles() 
         // calculate tiles which chess piece can move next (represented by tile's lower left corner)
     {
         switch (tag)  // tag is the type of the piece ("Pawn", "Rook", "Knight", "Bishop", "King" or "Queen")
@@ -413,10 +413,10 @@ public class PieceController : MonoBehaviour
         throw new System.Exception("Chess piece has unknown tag.");
     }
 
-    public static Vector2 GetTileForPosition(Vector3 worldPos) 
+    public static Vector2Int GetTileForPosition(Vector3 worldPos) 
         // calculate the lower left corner coordinates of the corresponding tile for a given world position
     {
-        return new Vector2((float)System.Math.Floor(worldPos.x), (float)System.Math.Floor(worldPos.y));
+        return new Vector2Int((int)System.Math.Floor(worldPos.x), (int)System.Math.Floor(worldPos.y));
     }
 
     public bool RectContain(Vector2 lowerLeftCorner, float rectSize, Vector2 point)
@@ -447,28 +447,28 @@ public class PieceController : MonoBehaviour
         MenuManager.Instance.gamePaused = true;
     }
 
-    private bool IsPromotionTile(Vector2 tile, string player)
+    private bool IsPromotionTile(Vector2Int tile, string player)
         // can a pawn of "player" be promoted at "tile" 
     {
         return (player == "white" && tile.y == 7) || (player == "black" && tile.y == 0);
     }
 
-    private Dictionary<Vector2, GameObject> GetLegalCastlingTiles()
+    private Dictionary<Vector2Int, GameObject> GetLegalCastlingTiles()
         // for king piece: get tiles (and corresponding rooks) that are "legal to move" by castling
         // (key, value) = (castlingTargetTile for king, corresponding rook)
     {
-        Vector2 kingTile = GetTileForPosition(transform.position);
-        Dictionary<Vector2, GameObject> castlingTiles = new Dictionary<Vector2, GameObject>(); ;
+        Vector2Int kingTile = GetTileForPosition(transform.position);
+        Dictionary<Vector2Int, GameObject> castlingTiles = new Dictionary<Vector2Int, GameObject>(); ;
         if (!atStart || boardManager.inCheck)
         {
             return castlingTiles;  // castling requirements violated -> castling not possible
         }
 
-        Vector2 tile;
+        Vector2Int tile;
         // long castling (left side of king)
         for (int i = 1; i <= 4; i++)
         {
-            tile = new Vector2(Mathf.Round(kingTile.x - i), kingTile.y);
+            tile = new Vector2Int(kingTile.x - i, kingTile.y);
             if (boardManager.occupiedTiles.ContainsKey(tile)) 
             {
                 if (boardManager.occupiedTiles[tile].tag == "Rook" && boardManager.occupiedTiles[tile].GetComponent<PieceController>().atStart)
@@ -477,7 +477,7 @@ public class PieceController : MonoBehaviour
                     {
                         break;
                     }
-                    castlingTiles[new Vector2(Mathf.Round(kingTile.x - 2), kingTile.y)] = boardManager.occupiedTiles[tile];  // long castling possible
+                    castlingTiles[new Vector2Int(kingTile.x - 2, kingTile.y)] = boardManager.occupiedTiles[tile];  // long castling possible
                 }
                 break;
             }
@@ -485,7 +485,7 @@ public class PieceController : MonoBehaviour
         // short castling (right side of king)
         for (int i = 1; i <= 3; i++)
         {
-            tile = new Vector2(Mathf.Round(kingTile.x + i), kingTile.y);
+            tile = new Vector2Int(kingTile.x + i, kingTile.y);
             if (boardManager.occupiedTiles.ContainsKey(tile))
             {
                 if (boardManager.occupiedTiles[tile].tag == "Rook" && boardManager.occupiedTiles[tile].GetComponent<PieceController>().atStart)
@@ -494,7 +494,7 @@ public class PieceController : MonoBehaviour
                     {
                         break;
                     }
-                    castlingTiles[new Vector2(Mathf.Round(kingTile.x + 2), kingTile.y)] = boardManager.occupiedTiles[tile];  // short castling possible
+                    castlingTiles[new Vector2Int(kingTile.x + 2, kingTile.y)] = boardManager.occupiedTiles[tile];  // short castling possible
                 }
                 break;
             }
@@ -503,11 +503,11 @@ public class PieceController : MonoBehaviour
         return castlingTiles;
     }
 
-    private bool CastlingThroughThreat(Vector2 kingTile, string typeOfCastling)
+    private bool CastlingThroughThreat(Vector2Int kingTile, string typeOfCastling)
         // returns true if castling move (defined by king's startPos "kingTile" and the type of castling - "long" or "short")
         // would go through a threatend tile
     {
-        Vector2 passedTile;  // tile that is passed by king during castling
+        Vector2Int passedTile;  // tile that is passed by king during castling
         List<GameObject> enemyPieces;
         if (player == "white")
         {
@@ -520,10 +520,10 @@ public class PieceController : MonoBehaviour
 
         if (typeOfCastling == "long")
         {
-            passedTile = new Vector2(Mathf.Round(kingTile.x - 1), kingTile.y);
+            passedTile = new Vector2Int(kingTile.x - 1, kingTile.y);
         } else  // typeOfCastling == "short"
         {
-            passedTile = new Vector2(Mathf.Round(kingTile.x + 1), kingTile.y);
+            passedTile = new Vector2Int(kingTile.x + 1, kingTile.y);
         }
 
         // check if any enemy piece threats "passedTile"
@@ -535,8 +535,8 @@ public class PieceController : MonoBehaviour
                 continue;
             }
 
-            List<Vector2> threatendTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
-            foreach (Vector2 tile in threatendTiles)
+            List<Vector2Int> threatendTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
+            foreach (Vector2Int tile in threatendTiles)
             {
                 if (tile == passedTile)
                 {
@@ -562,11 +562,11 @@ public class PieceController : MonoBehaviour
         }
     }
 
-    private static List<Vector2> CloneListVector2(List<Vector2> originalList)
+    private static List<Vector2Int> CloneListVector2(List<Vector2Int> originalList)
         // creates a copy of "originalList"
     {
-        List<Vector2> newList = new List<Vector2>();
-        foreach (Vector2 obj in originalList)
+        List<Vector2Int> newList = new List<Vector2Int>();
+        foreach (Vector2Int obj in originalList)
         {
             newList.Add(obj);
         }

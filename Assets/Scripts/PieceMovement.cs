@@ -6,7 +6,7 @@ public class PieceMovement : MonoBehaviour
 { 
     private PieceController pieceController;
     private BoardManager boardManager;
-    private float tileSize;
+    private int tileSize;
 
     public GameObject board;
 
@@ -18,16 +18,16 @@ public class PieceMovement : MonoBehaviour
         tileSize = boardManager.tileSize;
     }
 
-    private Vector2 GetTileForPosition(Vector3 worldPos) // calculate the lower left corner coordinates of the corresponding tile for a given world position
+    private Vector2Int GetTileForPosition(Vector3 worldPos) // calculate the lower left corner coordinates of the corresponding tile for a given world position
     {
-        return new Vector2((float)System.Math.Floor(worldPos.x), (float)System.Math.Floor(worldPos.y));
+        return new Vector2Int((int)System.Math.Floor(worldPos.x), (int)System.Math.Floor(worldPos.y));
     }
 
-    private bool TileInBounce(Vector2 tile, string boardSize, float tileSize)
+    private bool TileInBounce(Vector2Int tile, string boardSize, int tileSize)
     {
         if (boardSize == "classic")
         {
-            return pieceController.RectContain(new Vector2(0, 0), 8, new Vector2(tile.x + tileSize / 2, tile.y + tileSize / 2));
+            return pieceController.RectContain(new Vector2(0, 0), 8, new Vector2(tile.x + (float)tileSize / 2, tile.y + (float)tileSize / 2));
             // new Vector(0, 0) since lower left corner of chess board is at (0, 0);  8 since boardSize = "classic"
         }
         else
@@ -52,18 +52,18 @@ public class PieceMovement : MonoBehaviour
     }
 
 
-    public List<Vector2> GetLegalToMoveTilesPawn(Vector2 moveDirection, bool atStart)  // moveDirection is (0, 1) for "white" and (0, -1) for "black" in classic chess
+    public List<Vector2Int> GetLegalToMoveTilesPawn(Vector2Int moveDirection, bool atStart)  // moveDirection is (0, 1) for "white" and (0, -1) for "black" in classic chess
     {
-        List<Vector2> legalTiles = new List<Vector2>();
-        Vector2 currentTile = GetTileForPosition(transform.position);
+        List<Vector2Int> legalTiles = new List<Vector2Int>();
+        Vector2Int currentTile = GetTileForPosition(transform.position);
 
         // pawn can move ONE FIELD FORWARDS
-        Vector2 newTile = new Vector2(currentTile.x, currentTile.y + moveDirection.y);
+        Vector2Int newTile = new Vector2Int(currentTile.x, currentTile.y + moveDirection.y);
         if (!boardManager.occupiedTiles.ContainsKey(newTile) && TileInBounce(newTile, boardManager.boardSize, boardManager.tileSize))
         {
             legalTiles.Add(newTile);
             // at start position, pawn can move TWO FIELDS FORWARDS
-            newTile = new Vector2(currentTile.x, currentTile.y + moveDirection.y * 2);
+            newTile = new Vector2Int(currentTile.x, currentTile.y + moveDirection.y * 2);
             if (atStart && !boardManager.occupiedTiles.ContainsKey(newTile) 
                 && TileInBounce(newTile, boardManager.boardSize, boardManager.tileSize))
             {
@@ -71,7 +71,7 @@ public class PieceMovement : MonoBehaviour
             }
         }
         // pawn can hit enemies ONE FIELD LEFT-FORWARD
-        newTile = new Vector2(currentTile.x - 1, currentTile.y + moveDirection.y);
+        newTile = new Vector2Int(currentTile.x - 1, currentTile.y + moveDirection.y);
         if (boardManager.occupiedTiles.ContainsKey(newTile) && TileInBounce(newTile, boardManager.boardSize, boardManager.tileSize))
         {
             if (boardManager.occupiedTiles[newTile].GetComponent<PieceController>().player != GetComponent<PieceController>().player)
@@ -81,7 +81,7 @@ public class PieceMovement : MonoBehaviour
             }
         }
         // pawn can hit enemies ONE FIELD RIGHT-FORWARD
-        newTile = new Vector2(currentTile.x + 1, currentTile.y + moveDirection.y);
+        newTile = new Vector2Int(currentTile.x + 1, currentTile.y + moveDirection.y);
         if (boardManager.occupiedTiles.ContainsKey(newTile) && TileInBounce(newTile, boardManager.boardSize, boardManager.tileSize))
         {
             if (boardManager.occupiedTiles[newTile].GetComponent<PieceController>().player != GetComponent<PieceController>().player)
@@ -93,10 +93,10 @@ public class PieceMovement : MonoBehaviour
         return legalTiles;
     }
 
-    public List<Vector2> GetLegalToMoveTilesRook()
+    public List<Vector2Int> GetLegalToMoveTilesRook()
     {
-        List<Vector2> legalTiles = new List<Vector2>();
-        Vector2 currentTile = GetTileForPosition(transform.position);
+        List<Vector2Int> legalTiles = new List<Vector2Int>();
+        Vector2Int currentTile = GetTileForPosition(transform.position);
 
         // rook can move leftwards
         legalTiles.AddRange(GetLegalToMoveTilesDirection(currentTile, new Vector2Int(-1, 0)));
@@ -110,10 +110,10 @@ public class PieceMovement : MonoBehaviour
         return legalTiles;
     }
 
-    public List<Vector2> GetLegalToMoveTilesKnight()
+    public List<Vector2Int> GetLegalToMoveTilesKnight()
     {
-        List<Vector2> legalTiles = new List<Vector2>();
-        Vector2 currentTile = GetTileForPosition(transform.position);
+        List<Vector2Int> legalTiles = new List<Vector2Int>();
+        Vector2Int currentTile = GetTileForPosition(transform.position);
 
         // knight can jump left-upwards*2
         legalTiles.AddRange(GetLegalToMoveTilesJump(currentTile, new Vector2Int(-1, 2)));
@@ -135,10 +135,10 @@ public class PieceMovement : MonoBehaviour
         return legalTiles;
     }
 
-    public List<Vector2> GetLegalToMoveTilesBishop()
+    public List<Vector2Int> GetLegalToMoveTilesBishop()
     {
-        List<Vector2> legalTiles = new List<Vector2>();
-        Vector2 currentTile = GetTileForPosition(transform.position);
+        List<Vector2Int> legalTiles = new List<Vector2Int>();
+        Vector2Int currentTile = GetTileForPosition(transform.position);
 
         // bishop can move diagonally leftwards/upwards
         legalTiles.AddRange(GetLegalToMoveTilesDirection(currentTile, new Vector2Int(-1, 1)));
@@ -152,10 +152,10 @@ public class PieceMovement : MonoBehaviour
         return legalTiles;
     }
 
-    public List<Vector2> GetLegalToMoveTilesQueen()
+    public List<Vector2Int> GetLegalToMoveTilesQueen()
     {
-        List<Vector2> legalTiles = new List<Vector2>();
-        Vector2 currentTile = GetTileForPosition(transform.position);
+        List<Vector2Int> legalTiles = new List<Vector2Int>();
+        Vector2Int currentTile = GetTileForPosition(transform.position);
 
         // queen can do all rook moves
         legalTiles.AddRange(GetLegalToMoveTilesRook());
@@ -165,18 +165,18 @@ public class PieceMovement : MonoBehaviour
         return legalTiles;
     }
 
-    public List<Vector2> GetLegalToMoveTilesKing()
+    public List<Vector2Int> GetLegalToMoveTilesKing()
     {
-        List<Vector2> queenTiles = new List<Vector2>();
-        List<Vector2> legalTiles = new List<Vector2>();
-        Vector2 currentTile = GetTileForPosition(transform.position);
+        List<Vector2Int> queenTiles = new List<Vector2Int>();
+        List<Vector2Int> legalTiles = new List<Vector2Int>();
+        Vector2Int currentTile = GetTileForPosition(transform.position);
 
         // king can do same moves like queen, but only with a range of one field
         queenTiles.AddRange(GetLegalToMoveTilesQueen());
-        foreach (Vector2 tile in queenTiles)
+        foreach (Vector2Int tile in queenTiles)
         {
-            float distToKingX = Mathf.Abs(tile.x - currentTile.x);
-            float distToKingY = Mathf.Abs(tile.y - currentTile.y);
+            int distToKingX = Mathf.Abs(tile.x - currentTile.x);
+            int distToKingY = Mathf.Abs(tile.y - currentTile.y);
             if (distToKingX == tileSize && (distToKingY == tileSize || distToKingY == 0) || 
                 (distToKingX == tileSize || distToKingX == 0) && distToKingY == tileSize)
             {
@@ -187,15 +187,15 @@ public class PieceMovement : MonoBehaviour
         return legalTiles;
     }
 
-    public List<Vector2> GetLegalToMoveTilesDirection(Vector2 currentTile, Vector2Int direction)
+    public List<Vector2Int> GetLegalToMoveTilesDirection(Vector2Int currentTile, Vector2Int direction)
         // direction: leftward = (-1, 0), rightward = (1, 0), upward = (0, 1), downward = (0, -1)
         //            diagonal = (-1, 1) / (1, 1) / (-1, -1) / (1, -1)
     {
-        List<Vector2> legalTiles = new List<Vector2>();
+        List<Vector2Int> legalTiles = new List<Vector2Int>();
         int dir_x = direction.x;
         int dir_y = direction.y;
 
-        Vector2 newTile = new Vector2(currentTile.x + tileSize * dir_x, currentTile.y + tileSize * dir_y);
+        Vector2Int newTile = new Vector2Int(currentTile.x + tileSize * dir_x, currentTile.y + tileSize * dir_y);
 
         while (TileInBounce(newTile, boardManager.boardSize, tileSize))
         {
@@ -212,17 +212,17 @@ public class PieceMovement : MonoBehaviour
             legalTiles.Add(newTile);  // newTile is not occupied -> legal to move
             dir_x = IncrementAbs(dir_x);
             dir_y = IncrementAbs(dir_y);
-            newTile = new Vector2(currentTile.x + tileSize * dir_x, currentTile.y + tileSize * dir_y);
+            newTile = new Vector2Int(currentTile.x + tileSize * dir_x, currentTile.y + tileSize * dir_y);
         }
         return legalTiles;
     }
 
-    public List<Vector2> GetLegalToMoveTilesJump(Vector2 currentTile, Vector2Int jumpDirection)
+    public List<Vector2Int> GetLegalToMoveTilesJump(Vector2Int currentTile, Vector2Int jumpDirection)
         // jumpDirection: left*2-upwards = (-2, 1)
         //                right-downwards*2 = (1, -2) etc.
     {
-        List<Vector2> legalTiles = new List<Vector2>();
-        Vector2 newTile = new Vector2(currentTile.x + tileSize * jumpDirection.x, 
+        List<Vector2Int> legalTiles = new List<Vector2Int>();
+        Vector2Int newTile = new Vector2Int(currentTile.x + tileSize * jumpDirection.x, 
                                       currentTile.y + tileSize * jumpDirection.y);
 
         if (TileInBounce(newTile, boardManager.boardSize, tileSize))

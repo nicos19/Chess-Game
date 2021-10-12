@@ -7,20 +7,20 @@ using System.IO;
 
 public class BoardManager : MonoBehaviour
 {
-    public float tileSize = 1f;  // height/width of a single tile
+    public int tileSize = 1;  // height/width of a single tile
     public string boardSize = "classic";  // "classic" represents an 8x8 chess board
     public string activePlayer = "white";  // which player ("white" or "black") moves next
     public string ending;  // "stillRunning" or "whiteWins" or "blackWins" or "tie"
     public bool readyForNextMove;
     public bool activeSelection;  // is currently any piece selected
-    public List<Vector2> activeSelectionLegalTiles;  // "legalToMove" tiles of currently active selection
+    public List<Vector2Int> activeSelectionLegalTiles;  // "legalToMove" tiles of currently active selection
     public bool inCheck;  // is currently a king in check
     public bool activeIngameMessage;  // is currently some ingame message active
     public GameObject activeText = null;  // the ingame message that is currently active
     public IEnumerator activeCoroutine = null;  // represents currently active ingame message
     public IEnumerator newCoroutine = null;  // represents ingame message that should be displayed next
     public List<GameObject> checkSetter;  // pieces that threaten enemy's king causing chess
-    public List<Vector2> lastMove;
+    public List<Vector2Int> lastMove;
     public bool lastMoveActive;  // is the last move currently highlighted or not
     public Tilemap map;
     public TileBase brightTile, brightTileSelected, brightTileLegalToMove, brightTileCheckSetter, brightTileInCheck,
@@ -35,7 +35,7 @@ public class BoardManager : MonoBehaviour
     public GameObject whitePieces, blackPieces;  // parent objects of all chess piece objects
     public List<GameObject> whitePiecesList, blackPiecesList;  // lists with all white/black pieces on the board
     public GameObject whiteKing, blackKing;
-    public Dictionary<Vector2, GameObject> occupiedTiles = new Dictionary<Vector2, GameObject>();  // (key, value) = (Vector2 tile, GameObject chess piece at tile)
+    public Dictionary<Vector2Int, GameObject> occupiedTiles = new Dictionary<Vector2Int, GameObject>();  // (key, value) = (Vector2 tile, GameObject chess piece at tile)
     public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textNoCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable;
     public TMP_Text textWhiteWins, textBlackWins, textTie;
     public GameObject whitesTurn, blacksTurn;
@@ -56,11 +56,11 @@ public class BoardManager : MonoBehaviour
         ending = "stillRunning";
         readyForNextMove = true;
         activeSelection = false;
-        activeSelectionLegalTiles = new List<Vector2>();
+        activeSelectionLegalTiles = new List<Vector2Int>();
         inCheck = false;
         activeIngameMessage = false;
         checkSetter = new List<GameObject>();
-        lastMove = new List<Vector2>();
+        lastMove = new List<Vector2Int>();
         lastMoveActive = false;
         ingameMessagesManager = ingameMessages.GetComponent<IngameMessagesManager>();
 
@@ -118,7 +118,7 @@ public class BoardManager : MonoBehaviour
             textNoCheck.gameObject.SetActive(true);
 
             GameObject activeKing;
-            Vector2 kingTile;
+            Vector2Int kingTile;
             if (activePlayer == "white")
             {
                 activeKing = whiteKing;
@@ -197,7 +197,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    public List<GameObject> KingInCheckBy(Vector2 kingTile, string attackedPlayer)
+    public List<GameObject> KingInCheckBy(Vector2Int kingTile, string attackedPlayer)
     // returns a list of all check setter against king of "attackedPlayer" in current state
     // returns empty list if king of "attackedPlayer" is not in check
     {
@@ -220,8 +220,8 @@ public class BoardManager : MonoBehaviour
                 continue;
             }
 
-            List<Vector2> threatendTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
-            foreach (Vector2 tile in threatendTiles)
+            List<Vector2Int> threatendTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
+            foreach (Vector2Int tile in threatendTiles)
             {
                 if (tile == kingTile)
                 {
@@ -245,7 +245,7 @@ public class BoardManager : MonoBehaviour
             alliedPieces = blackPiecesList;
         }
 
-        List<Vector2> possibleTargetTiles;
+        List<Vector2Int> possibleTargetTiles;
         foreach (GameObject piece in alliedPieces)
         {
             if (piece == null || !piece.activeSelf)
@@ -255,9 +255,9 @@ public class BoardManager : MonoBehaviour
             }
             // check if "piece" can do any move
             possibleTargetTiles = piece.GetComponent<PieceController>().GetLegalToMoveTiles();
-            foreach (Vector2 tile in possibleTargetTiles)
+            foreach (Vector2Int tile in possibleTargetTiles)
             {
-                Vector3 targetPos = new Vector3(tile.x + tileSize / 2, tile.y + tileSize / 2, piece.transform.position.z);
+                Vector3 targetPos = new Vector3(tile.x + (float)tileSize / 2, tile.y + (float)tileSize / 2, piece.transform.position.z);
 
                 if (piece.GetComponent<PieceController>().TryMove(targetPos, true))
                 {
@@ -351,7 +351,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    public void ChangeTile(Vector2 tilePos, TileBase[] newTile)
+    public void ChangeTile(Vector2Int tilePos, TileBase[] newTile)
     // replace tile at "tilePos" with newTile[0] or newTile[1] for a brightTile variant or a darkTile variant respectively
     {
         Vector3Int tilePosInt = new Vector3Int((int)tilePos.x, (int)tilePos.y, 0);  // WARNING: tilePos.z = 0 only if Tilemap's z-value = 0
@@ -369,7 +369,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    public void SetCorrectTile(Vector2 tilePos)
+    public void SetCorrectTile(Vector2Int tilePos)
     // replace tile at "tilePos" with correct tile regarding current state of the chess game
     {
         Vector3Int tilePosInt = new Vector3Int((int)tilePos.x, (int)tilePos.y, 0);  // WARNING: tilePos.z = 0 only if Tilemap's z-value = 0
@@ -542,7 +542,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    private bool CheckSetterAt(Vector2 tile)
+    private bool CheckSetterAt(Vector2Int tile)
         // returns true if there is a checkSetter at "tile"
     {
         foreach (GameObject piece in checkSetter)
@@ -555,7 +555,7 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
-    private bool WasLastMoveOrigin(Vector2 tile)
+    private bool WasLastMoveOrigin(Vector2Int tile)
         // returns true if "tile" was the origin of the lastMove made in the game
         // (if lastMoveActive = false, then always return false)
     {
@@ -574,7 +574,7 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
-    private bool WasLastMoveTarget(Vector2 tile)
+    private bool WasLastMoveTarget(Vector2Int tile)
         // returns true if "tile" was the target of the lastMove made in the game
         // (if lastMoveActive = false, then always return false)
     {
@@ -594,7 +594,7 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
-    public void DocumentMove(List<Vector2> move, string filePath)
+    public void DocumentMove(List<Vector2Int> move, string filePath)
         // document the last made move in the file represented by "filePath"
     {
         string path = filePath;
@@ -615,7 +615,7 @@ public class BoardManager : MonoBehaviour
         File.AppendAllText(path, newLine);  // add last move
     }
 
-    private string TilePositionAsString(Vector2 tile)
+    private string TilePositionAsString(Vector2Int tile)
         // returns string representation of a tile's position, e.g. (0, 0) => A1
     {
         string tileX = tile.x switch
