@@ -13,6 +13,7 @@ public class AudioManager : MonoBehaviour
     public GameObject errorSoundEffectObject;
     public GameObject winSoundEffectObject;
     public GameObject tieSoundEffectObject;
+    public GameObject buttonSoundEffectObject;
 
     private void Awake()
     {
@@ -33,6 +34,9 @@ public class AudioManager : MonoBehaviour
     public void SetMusicVolume(float volume)
     {
         backgroundMusicObject.GetComponent<AudioSource>().volume = volume;
+        
+        PlayerPrefs.SetFloat("music", volume);
+        PlayerPrefs.Save();
     }
 
     public void ToggleSoundEffects(bool value)
@@ -44,6 +48,18 @@ public class AudioManager : MonoBehaviour
         errorSoundEffectObject.GetComponent<AudioSource>().mute = !value;
         winSoundEffectObject.GetComponent<AudioSource>().mute = !value;
         tieSoundEffectObject.GetComponent<AudioSource>().mute = !value;
+        buttonSoundEffectObject.GetComponent<AudioSource>().mute = !value;
+
+        if (value)
+        {
+            PlayerPrefs.SetInt("soundEffects", 1);
+        } else
+        {
+            PlayerPrefs.SetInt("soundEffects", 0);
+        }
+        PlayerPrefs.Save();
+
+        PlayButtonSoundEffect();
     }
 
 
@@ -79,5 +95,10 @@ public class AudioManager : MonoBehaviour
         {
             tieSoundEffectObject.GetComponent<AudioSource>().Play();
         }
+    }
+
+    public void PlayButtonSoundEffect()
+    {
+        buttonSoundEffectObject.GetComponent<AudioSource>().Play();
     }
 }

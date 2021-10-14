@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using TMPro;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 public class BoardManager : MonoBehaviour
 {
@@ -76,6 +77,12 @@ public class BoardManager : MonoBehaviour
         brightTileVariants = new TileBase[] { brightTile, brightTileSelected, brightTileLegalToMove, brightTileCheckSetter, brightTileInCheck, brightTileLastMoveOrigin, brightTileLastMoveTarget, brightTileLastMoveTargetCheckSetter, brightTileLegalToMoveLastMoveOrigin, brightTileLegalToMoveLastMoveTarget, brightTileLegalToMoveCheckSetter, brightTileLegalToMoveLastMoveTargetCheckSetter };
 
         darkTileVariants = new TileBase[] { darkTile, darkTileSelected, darkTileLegalToMove, darkTileCheckSetter, darkTileInCheck, darkTileLastMoveOrigin, darkTileLastMoveTarget, darkTileLastMoveTargetCheckSetter, darkTileLegalToMoveLastMoveOrigin, darkTileLegalToMoveLastMoveTarget, darkTileLegalToMoveCheckSetter, darkTileLegalToMoveLastMoveTargetCheckSetter };
+
+        // load savegame if player clicked Load Game button in main menu
+        if (MenuManager.Instance.loadGame)
+        {
+            LoadSavegame();
+        }
     }
 
     // Update is called once per frame
@@ -632,6 +639,84 @@ public class BoardManager : MonoBehaviour
         };
         string tileY = (tile.y + 1).ToString();
         return tileX + tileY;
+    }
+
+    private Savegame CreateSavegame()
+        // create a savegame instance that contains all relevant information about current game state
+    {
+        Savegame savegame = new Savegame();
+
+        // save board information
+        savegame.activePlayer = activePlayer;
+        savegame.ending = ending;
+        savegame.inCheck = inCheck;
+        savegame.lastMove = lastMove;
+
+        // save information about chess pieces
+        foreach (GameObject piece in whitePiecesList)
+        {
+            PieceSavegame pieceSavegame = new PieceSavegame();
+            pieceSavegame.pieceName = piece.name;
+            pieceSavegame.player = "white";
+            pieceSavegame.pieceTag = piece.tag;
+            pieceSavegame.position = piece.transform.position;
+            pieceSavegame.atStart = piece.GetComponent<PieceController>().atStart;
+            savegame.allPieces.Add(pieceSavegame);
+        }
+
+        foreach (GameObject piece in blackPiecesList)
+        {
+            PieceSavegame pieceSavegame = new PieceSavegame();
+            pieceSavegame.pieceName = piece.name;
+            pieceSavegame.player = "black";
+            pieceSavegame.pieceTag = piece.tag;
+            pieceSavegame.position = piece.transform.position;
+            pieceSavegame.atStart = piece.GetComponent<PieceController>().atStart;
+            savegame.allPieces.Add(pieceSavegame);
+        }
+
+        return savegame;
+    }
+
+    public void CreateSavegameFile()
+        // create a savegame on disk that can be deserialized when savegame is loaded
+    {
+        Savegame savegame = CreateSavegame();
+
+        BinaryFormatter bf = new BinaryFormatter();
+        FileStream file = File.Create(Application.persistentDataPath + "/savegame.save");
+        bf.Serialize(file, savegame);
+        file.Close();
+    }
+
+    public void LoadSavegame()
+        // use savegame (if available) to load a previously saved game
+    {
+        BinaryFormatter bf = new BinaryFormatter();
+        FileStream file = File.Open(Application.persistentDataPath + "/savegame.save", FileMode.Open);
+        Savegame savegame = (Savegame)bf.Deserialize(file);
+        file.Close();
+
+        // clear chess board
+        occupiedTiles.Clear();
+        foreach (GameObject piece in whitePiecesList)
+        {
+            Destroy(piece);
+        }
+        foreach (GameObject piece in blackPiecesList)
+        {
+            Destroy(piece);
+        }
+
+        // restore state of chess board based on savegame
+        activePlayer = savegame.activePlayer;
+        foreach (PieceSavegame pieceSavegame in savegame.allPieces)
+        {
+            gameObject.GetComponent<PieceCreator>().CreatePieceFromSavegame(pieceSavegame);
+        }
+
+        readyForNextMove = false;
+        MenuManager.Instance.loadGame = false;
     }
 
 }

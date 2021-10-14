@@ -12,6 +12,7 @@ public class MenuManager : MonoBehaviour
 
     public bool gameRunning;  // is a chess game running currently (=> open scene is GameScene.unity)
     public bool gamePaused;  // if a game is running: is game paused (=> settings menu is opened)
+    public bool loadGame;  // should a savegame be loaded (by BoardManager)?
 
     private void Awake()
     {
@@ -34,6 +35,7 @@ public class MenuManager : MonoBehaviour
     {
         gameRunning = false;
         gamePaused = false;
+        loadGame = false;
 
         SceneManager.LoadSceneAsync("MainMenu");
     }

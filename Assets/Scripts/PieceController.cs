@@ -10,7 +10,6 @@ public class PieceController : MonoBehaviour
     private Vector3 mousePos;
     private Vector3 mouseWorldPos;
     private Bounds colliderBounds;
-    private bool atStart;  // whether the piece is still at its starting position (and did not move yet)
     private List<Vector2Int> legalTiles;
     private Vector2Int moveDirection;  
     private GameObject ownKing;
@@ -22,13 +21,13 @@ public class PieceController : MonoBehaviour
     public Tilemap map;
     public string player;  // the player ("white" or "black") that is associated with the piece
     public bool activeOnJustTry;  // is the piece active during a TryMove(justTry=true) call
+    public bool atStart = true;  // whether the piece is still at its starting position (and did not move yet)
 
 
     // Start is called before the first frame update
     public void Start()
     {
         isSelected = false;
-        atStart = true;
         castling = new Dictionary<Vector2Int, GameObject>();
         boardManager = board.GetComponent<BoardManager>();
         map = boardManager.map;

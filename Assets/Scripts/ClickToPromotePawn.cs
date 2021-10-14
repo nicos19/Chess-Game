@@ -104,6 +104,8 @@ public class ClickToPromotePawn : MonoBehaviour
         board.GetComponent<BoardManager>().pawnPromotionMenu.SetActive(false);
         board.GetComponent<BoardManager>().pawnPromotionMenu.GetComponent<ClickToPromotePawn>().pawnToPromote = null;
         MenuManager.Instance.gamePaused = false;
+
+        AudioManager.Instance.PlayButtonSoundEffect();
     }
 
     public void InitializePiece(GameObject newPiece, string player)

@@ -4407,6 +4407,7 @@ GameObject:
   m_Component:
   - component: {fileID: 953397346}
   - component: {fileID: 953397345}
+  - component: {fileID: 953397347}
   m_Layer: 0
   m_Name: Chess Board
   m_TagString: Untagged
@@ -4502,6 +4503,33 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &953397347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 953397344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e30ac669034f8f84d8a4d2a9149496a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  board: {fileID: 953397344}
+  whitePieces: {fileID: 1121470915}
+  blackPieces: {fileID: 2064366575}
+  prefabKingWhite: {fileID: 800284876535815940, guid: d0d62f5e177b14742b1c941ea2beb09d, type: 3}
+  prefabQueenWhite: {fileID: 4431214116978853955, guid: bf6772a4804ead749bf804a668add32b, type: 3}
+  prefabRookWhite: {fileID: 2600537507148417832, guid: 66a4609137eaf5348953abbc36f58c83, type: 3}
+  prefabKnightWhite: {fileID: 3101355915894916285, guid: 65a90d3e84d851e4aa4f6961633b6a23, type: 3}
+  prefabBishopWhite: {fileID: 8005031246669133051, guid: 594574dfe6212a04b9f45c7a3211488f, type: 3}
+  prefabPawnWhite: {fileID: 1925607682882257636, guid: 194b0f711cf017343bc50305c2179231, type: 3}
+  prefabKingBlack: {fileID: 8965964684292584301, guid: 61852c9b55874c641b09d15e474844b1, type: 3}
+  prefabQueenBlack: {fileID: 7701551036419911682, guid: 7f25ff0288ae43a4fbf997cf70f644e5, type: 3}
+  prefabRookBlack: {fileID: 5796243313459843676, guid: a7d87ea3150a04247b56621b2d741460, type: 3}
+  prefabKnightBlack: {fileID: 5538765265468743085, guid: 8265e047fd7425640b7c8f736ff70ac5, type: 3}
+  prefabBishopBlack: {fileID: 5756950925675768358, guid: 8900f865e31d15642b688744eb89ee5d, type: 3}
+  prefabPawnBlack: {fileID: 6888086042957018406, guid: 39799f894efd8a94c8f5cb9dbda865a1, type: 3}
 --- !u!1 &1052677758
 GameObject:
   m_ObjectHideFlags: 0
@@ -8269,6 +8297,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9519c4115b725c4498d8a2a4a1fe8dd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  board: {fileID: 953397344}
 --- !u!1 &2106278616
 GameObject:
   m_ObjectHideFlags: 0

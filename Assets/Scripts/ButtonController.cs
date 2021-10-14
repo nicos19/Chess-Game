@@ -5,6 +5,8 @@ using UnityEngine.SceneManagement;
 
 public class ButtonController : MonoBehaviour
 {
+    public GameObject board;
+
     // Update is called once per frame
     void Update()
     {
@@ -24,14 +26,17 @@ public class ButtonController : MonoBehaviour
 
     public void StartNewGame()
     {
+        AudioManager.Instance.PlayButtonSoundEffect();
         MenuManager.Instance.gameRunning = true;
         SceneManager.LoadSceneAsync("GameScene");
     }
 
     public void LoadGame()
     {
+        AudioManager.Instance.PlayButtonSoundEffect();
         MenuManager.Instance.gameRunning = true;
-
+        MenuManager.Instance.loadGame = true;  // tells BoardManager in GameScene that a savegame shall be loaded
+        SceneManager.LoadSceneAsync("GameScene");
     }
 
     public void BackToMainMenu()
@@ -42,6 +47,11 @@ public class ButtonController : MonoBehaviour
             return;
         }
 
+        // save the game
+        board.GetComponent<BoardManager>().CreateSavegameFile();
+        
+        // back to main menu
+        AudioManager.Instance.PlayButtonSoundEffect();
         MenuManager.Instance.gameRunning = false;
         SceneManager.LoadSceneAsync("MainMenu");
     }
@@ -60,6 +70,7 @@ public class ButtonController : MonoBehaviour
             MenuManager.Instance.gamePaused = true;
         }
         MenuManager.Instance.settingsMenu.SetActive(true);
+        AudioManager.Instance.PlayButtonSoundEffect();
     }
 
     public void CloseSettingsMenu()
@@ -70,20 +81,24 @@ public class ButtonController : MonoBehaviour
             MenuManager.Instance.gamePaused = false;
         }
         MenuManager.Instance.settingsMenu.SetActive(false);
+        AudioManager.Instance.PlayButtonSoundEffect();
     }
 
     public void ShowCredits()
     {
         MenuManager.Instance.creditsScreen.SetActive(true);
+        AudioManager.Instance.PlayButtonSoundEffect();
     }
 
     public void CloseCredits()
     {
         MenuManager.Instance.creditsScreen.SetActive(false);
+        AudioManager.Instance.PlayButtonSoundEffect();
     }
 
     public void CloseGame()
     {
+        AudioManager.Instance.PlayButtonSoundEffect();
         Application.Quit();
     }
 }
