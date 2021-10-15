@@ -25,7 +25,7 @@ public class PieceCreator : MonoBehaviour
     public void CreatePieceFromSavegame(PieceSavegame pieceSavegame)
         // create a chess piece gameobject based on "pieceSavegame"
     {
-        Vector3 position = pieceSavegame.position;
+        Vector3 position = new Vector3(pieceSavegame.positionX, pieceSavegame.positionY, pieceSavegame.positionZ);
         string player = pieceSavegame.player;
         Transform parent;
 

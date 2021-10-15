@@ -51,9 +51,6 @@ public class BoardManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        File.WriteAllText(Application.persistentDataPath + "/allMoves.txt", "");
-        File.WriteAllText(Application.dataPath + "/allMoves.txt", "");
-
         ending = "stillRunning";
         readyForNextMove = true;
         activeSelection = false;
@@ -648,29 +645,47 @@ public class BoardManager : MonoBehaviour
 
         // save board information
         savegame.activePlayer = activePlayer;
-        savegame.ending = ending;
-        savegame.inCheck = inCheck;
-        savegame.lastMove = lastMove;
+        foreach (Vector2Int tile in lastMove)
+        {
+            savegame.lastMoveX.Add(tile.x);
+            savegame.lastMoveY.Add(tile.y);
+        }
 
         // save information about chess pieces
         foreach (GameObject piece in whitePiecesList)
         {
+            if (piece == null || !piece.activeSelf)
+            {
+                // piece already hitted and destroyed/deactivated
+                continue;
+            }
+
             PieceSavegame pieceSavegame = new PieceSavegame();
             pieceSavegame.pieceName = piece.name;
             pieceSavegame.player = "white";
             pieceSavegame.pieceTag = piece.tag;
-            pieceSavegame.position = piece.transform.position;
+            pieceSavegame.positionX = piece.transform.position.x;
+            pieceSavegame.positionY = piece.transform.position.y;
+            pieceSavegame.positionZ = piece.transform.position.z;
             pieceSavegame.atStart = piece.GetComponent<PieceController>().atStart;
             savegame.allPieces.Add(pieceSavegame);
         }
 
         foreach (GameObject piece in blackPiecesList)
         {
+            if (piece == null || !piece.activeSelf)
+            {
+                // piece already hitted and destroyed/deactivated
+                continue;
+            }
+
             PieceSavegame pieceSavegame = new PieceSavegame();
             pieceSavegame.pieceName = piece.name;
             pieceSavegame.player = "black";
             pieceSavegame.pieceTag = piece.tag;
-            pieceSavegame.position = piece.transform.position;
+            pieceSavegame.positionX = piece.transform.position.x;
+            pieceSavegame.positionY = piece.transform.position.y;
+            pieceSavegame.positionZ = piece.transform.position.z;
             pieceSavegame.atStart = piece.GetComponent<PieceController>().atStart;
             savegame.allPieces.Add(pieceSavegame);
         }
@@ -707,9 +722,30 @@ public class BoardManager : MonoBehaviour
         {
             Destroy(piece);
         }
+        whitePiecesList = new List<GameObject>();
+        blackPiecesList = new List<GameObject>();
 
         // restore state of chess board based on savegame
         activePlayer = savegame.activePlayer;
+        if (activePlayer == "white")
+        {
+            whitesTurn.SetActive(true);
+            blacksTurn.SetActive(false);
+        } else
+        {
+            whitesTurn.SetActive(false);
+            blacksTurn.SetActive(true);
+        }
+
+        // restore lastMove
+        List<Vector2Int> restoredLastMove = new List<Vector2Int>();
+        for (int i = 0; i < savegame.lastMoveX.Count; i++)
+        {
+            restoredLastMove.Add(new Vector2Int(savegame.lastMoveX[i], savegame.lastMoveY[i]));
+        }
+        lastMove = restoredLastMove;
+        
+        // restore chess pieces
         foreach (PieceSavegame pieceSavegame in savegame.allPieces)
         {
             gameObject.GetComponent<PieceCreator>().CreatePieceFromSavegame(pieceSavegame);

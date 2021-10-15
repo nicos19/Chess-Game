@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -26,6 +27,11 @@ public class ButtonController : MonoBehaviour
 
     public void StartNewGame()
     {
+        // reset allMoves.txt
+        File.WriteAllText(Application.persistentDataPath + "/allMoves.txt", "");
+        File.WriteAllText(Application.dataPath + "/allMoves.txt", "");
+
+        // start new game
         AudioManager.Instance.PlayButtonSoundEffect();
         MenuManager.Instance.gameRunning = true;
         SceneManager.LoadSceneAsync("GameScene");
