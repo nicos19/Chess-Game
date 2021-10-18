@@ -128,6 +128,8 @@ MonoBehaviour:
   boardManager: {fileID: 0}
   map: {fileID: 0}
   player: white
+  activeOnJustTry: 0
+  atStart: 1
 --- !u!50 &2600537507148417830
 Rigidbody2D:
   serializedVersion: 4
