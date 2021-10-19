@@ -44,6 +44,8 @@ public class BoardManager : MonoBehaviour
     public GameObject pawnPromotionMenu;
     public GameObject ingameMessages;
     public IngameMessagesManager ingameMessagesManager;
+    public GameObject onlineMultiplayerManagerObject;
+    public OnlineMultiplayerManager onlineMultiplayerManager;
 
     private TileBase[] brightTileVariants;
     private TileBase[] darkTileVariants;
@@ -61,6 +63,7 @@ public class BoardManager : MonoBehaviour
         lastMove = new List<Vector2Int>();
         lastMoveActive = false;
         ingameMessagesManager = ingameMessages.GetComponent<IngameMessagesManager>();
+        onlineMultiplayerManager = onlineMultiplayerManagerObject.GetComponent<OnlineMultiplayerManager>();
 
         foreach (Transform child in whitePieces.transform)
         {
@@ -182,6 +185,22 @@ public class BoardManager : MonoBehaviour
         if (ending != "stillRunning")
         {
             DrawEndingScreen(ending);
+        }
+
+        // online multiplayer
+        if (OnlineMultiplayerActive.Instance.isOnline)
+        {
+            if ((onlineMultiplayerManager.player == "white" && onlineMultiplayerManager.blackMoved) || 
+                (onlineMultiplayerManager.player == "black" && onlineMultiplayerManager.whiteMoved))
+            {
+                onlineMultiplayerManager.whiteMoved = false;
+                onlineMultiplayerManager.blackMoved = false;
+
+                // opponent moved -> execute move locally
+                GameObject opponentPiece = GameObject.Find(onlineMultiplayerManager.lastMovedPiece);
+                Vector3 opponentTargetPos = onlineMultiplayerManager.lastMoveTargetPos;
+                opponentPiece.GetComponent<PieceController>().TryMove(opponentTargetPos);
+            }
         }
     }
 

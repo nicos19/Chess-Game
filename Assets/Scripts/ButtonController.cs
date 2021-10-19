@@ -7,6 +7,9 @@ using UnityEngine.SceneManagement;
 public class ButtonController : MonoBehaviour
 {
     public GameObject board;
+    public bool startMenusAssigned;  // whether "onlineStartMenu" and "offlineStartMenu" are assigned in the inspector
+    public GameObject onlineStartMenu;
+    public GameObject offlineStartMenu;
 
     // Update is called once per frame
     void Update()
@@ -21,8 +24,46 @@ public class ButtonController : MonoBehaviour
             {
                 // close settings menu if open when user hits "escape"
                 CloseSettingsMenu();
+            } else if (startMenusAssigned)
+            {
+                if (onlineStartMenu.activeSelf)
+                {
+                    // close online start menu if open when user hits "escape"
+                    CloseOnlineStartMenu();
+                }
+                else if (offlineStartMenu.activeSelf)
+                {
+                    // close online start menu if open when user hits "escape"
+                    CloseOfflineStartMenu();
+                }
             }
         }
+    }
+
+    public void OpenOnlineStartMenu()
+    {
+        OnlineMultiplayerActive.Instance.isOnline = true;
+        onlineStartMenu.SetActive(true);
+        AudioManager.Instance.PlayButtonSoundEffect();
+    }
+
+    public void CloseOnlineStartMenu()
+    {
+        OnlineMultiplayerActive.Instance.isOnline = false;
+        onlineStartMenu.SetActive(false);
+        AudioManager.Instance.PlayButtonSoundEffect();
+    }
+
+    public void OpenOfflineStartMenu()
+    {
+        offlineStartMenu.SetActive(true);
+        AudioManager.Instance.PlayButtonSoundEffect();
+    }
+
+    public void CloseOfflineStartMenu()
+    {
+        offlineStartMenu.SetActive(false);
+        AudioManager.Instance.PlayButtonSoundEffect();
     }
 
     public void StartNewGame()

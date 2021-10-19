@@ -61,6 +61,11 @@ public class PieceController : MonoBehaviour
         {
             return;  // wait for BoardManager.Update()
         }
+        if (OnlineMultiplayerActive.Instance.isOnline && 
+            boardManager.onlineMultiplayerManager.player != boardManager.activePlayer)
+        {
+            return;  // online multiplayer active: other player must move next
+        }
 
         StartCoroutine(WaitSelector());
     }
@@ -279,7 +284,10 @@ public class PieceController : MonoBehaviour
                 return true; 
             }
             Destroy(otherPiece);  // destroy hitted enemy piece finally
-            DeselectPiece();
+            if (isSelected)
+            {
+                DeselectPiece();
+            }
             transform.position = targetPos;  // actual move
             AudioManager.Instance.PlayHitSoundEffect();
         } else
@@ -342,7 +350,10 @@ public class PieceController : MonoBehaviour
                     boardManager.occupiedTiles[GetTileForPosition(transform.position)] = gameObject;
                     return true;
                 }
-                DeselectPiece();
+                if (isSelected)
+                {
+                    DeselectPiece();
+                }
                 transform.position = targetPos;  // actual move
                 AudioManager.Instance.PlayMoveSoundEffect();
             }
@@ -388,6 +399,19 @@ public class PieceController : MonoBehaviour
         // other player must move next
         boardManager.ChangeActivePlayer(player);
         boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
+        // if online multiplayer active: tell opponent player which move was made
+        if (OnlineMultiplayerActive.Instance.isOnline)
+        {
+            if (player == "white" && boardManager.onlineMultiplayerManager.player == "white")
+            {
+                boardManager.onlineMultiplayerManager.CmdSetMovedVariables(true, false);
+                boardManager.onlineMultiplayerManager.CmdTellServerLastMove(gameObject.name, targetPos);
+            } else if (player == "black" && boardManager.onlineMultiplayerManager.player == "black")
+            {
+                boardManager.onlineMultiplayerManager.CmdSetMovedVariables(false, true);
+                boardManager.onlineMultiplayerManager.CmdTellServerLastMove(gameObject.name, targetPos);
+            }
+        }
         return true;
     }
 

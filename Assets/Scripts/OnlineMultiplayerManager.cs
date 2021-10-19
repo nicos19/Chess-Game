@@ -12,19 +12,44 @@ using Mirror;
 public class OnlineMultiplayerManager : NetworkBehaviour
 {
     [SyncVar]
-    public bool inInitialState;  // whether chess game is still in initial state (-> no piece moved)
-    [SyncVar]
     public bool whiteMoved, blackMoved;  // whether white or black just did a move
     [SyncVar]
-    public GameObject lastMovedPiece;
+    public string lastMovedPiece;
     [SyncVar]
     public Vector3 lastMoveTargetPos;
     [SyncVar]
     public int joinedPlayers;
-    [SyncVar]
-    public bool onlineMultiplayer;  // whether this is a online multiplayer game or not
     
     public string player;  // player associated with this client (server-client is "white", client-2 is "black")
+
+    public void OnlineMultiplayerReset()
+    {
+        whiteMoved = false;
+        blackMoved = false;
+        joinedPlayers = 0;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdNewClientJoined()
+    {
+        joinedPlayers += 1;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdSetMovedVariables(bool moveByWhite, bool moveByBlack)
+    {
+        whiteMoved = moveByWhite;
+        blackMoved = moveByBlack;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdTellServerLastMove(string piece, Vector3 targetPosition)
+        // tells server which moved was just executed
+    {
+        lastMovedPiece = piece;
+        lastMoveTargetPos = targetPosition;
+    }
+
 
     #region Start & Stop Callbacks
 
@@ -35,11 +60,7 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     /// </summary>
     public override void OnStartServer() 
     {
-        inInitialState = true;
-        whiteMoved = false;
-        blackMoved = false;
-        onlineMultiplayer = true;
-        joinedPlayers = 0;
+        OnlineMultiplayerReset();
     }
 
     /// <summary>
@@ -57,11 +78,11 @@ public class OnlineMultiplayerManager : NetworkBehaviour
         if (joinedPlayers == 0)
         {
             player = "white";
-            joinedPlayers += 1;
+            CmdNewClientJoined(); //joinedPlayers += 1;
         } else if (joinedPlayers == 1)
         {
             player = "black";
-            joinedPlayers += 1;
+            CmdNewClientJoined(); // joinedPlayers += 1;
         }
     }
 
