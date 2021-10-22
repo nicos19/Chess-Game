@@ -1602,6 +1602,7 @@ MonoBehaviour:
   gameRunning: 0
   gamePaused: 0
   loadGame: 0
+  intentionalDisconnect: 0
 --- !u!4 &941141038
 Transform:
   m_ObjectHideFlags: 0
@@ -1631,9 +1632,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   board: {fileID: 0}
-  startMenusAssigned: 0
+  hostIPAddress: {fileID: 0}
   onlineStartMenu: {fileID: 0}
   offlineStartMenu: {fileID: 0}
+  startMenusAssigned: 0
+  dontSave: 0
 --- !u!1 &961173763
 GameObject:
   m_ObjectHideFlags: 0
@@ -3672,15 +3675,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dontDestroyOnLoad: 1
-  PersistNetworkManagerToOfflineScene: 0
+  PersistNetworkManagerToOfflineScene: 1
   runInBackground: 1
   autoStartServerBuild: 1
   serverTickRate: 30
-  offlineScene: 
-  onlineScene: 
+  offlineScene: Assets/Scenes/DisconnectedScreen.unity
+  onlineScene: Assets/Scenes/GameScene.unity
   transport: {fileID: 1745148361}
   networkAddress: localhost
-  maxConnections: 100
+  maxConnections: 2
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60
   authenticator: {fileID: 0}

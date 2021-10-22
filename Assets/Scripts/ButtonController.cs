@@ -1,15 +1,24 @@
+using Mirror;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class ButtonController : MonoBehaviour
 {
+    // only set in GameScene
     public GameObject board;
-    public bool startMenusAssigned;  // whether "onlineStartMenu" and "offlineStartMenu" are assigned in the inspector
+    public InputField hostIPAddress;
+
+    // only set in MainMenu
     public GameObject onlineStartMenu;
     public GameObject offlineStartMenu;
+
+    public bool startMenusAssigned;  // whether "onlineStartMenu" and "offlineStartMenu" are assigned in the inspector
+    public bool dontSave = false;  // whether game shall be saved if BackToMainMenu() is called
+    
 
     // Update is called once per frame
     void Update()
@@ -40,6 +49,11 @@ public class ButtonController : MonoBehaviour
         }
     }
 
+
+    // -----------------------------------------------------------------------
+    // MENUS BUTTON CONTROLLING
+    // -----------------------------------------------------------------------
+
     public void OpenOnlineStartMenu()
     {
         OnlineMultiplayerActive.Instance.isOnline = true;
@@ -67,6 +81,7 @@ public class ButtonController : MonoBehaviour
     }
 
     public void StartNewGame()
+        // ONLY FOR OFFLINE GAMES -> See ConnectForNewGame() for online games
     {
         // reset allMoves.txt
         File.WriteAllText(Application.persistentDataPath + "/allMoves.txt", "");
@@ -79,6 +94,7 @@ public class ButtonController : MonoBehaviour
     }
 
     public void LoadGame()
+    // ONLY FOR OFFLINE GAMES -> See ConnectForLoadGame() for online games
     {
         AudioManager.Instance.PlayButtonSoundEffect();
         MenuManager.Instance.gameRunning = true;
@@ -94,13 +110,29 @@ public class ButtonController : MonoBehaviour
             return;
         }
 
-        // save the game
-        board.GetComponent<BoardManager>().CreateSavegameFile();
+        if (!dontSave)
+        {
+            // save the game
+            board.GetComponent<BoardManager>().CreateSavegameFile();
+        }
         
         // back to main menu
         AudioManager.Instance.PlayButtonSoundEffect();
         MenuManager.Instance.gameRunning = false;
-        SceneManager.LoadSceneAsync("MainMenu");
+        MenuManager.Instance.loadGame = false;
+        if (OnlineMultiplayerActive.Instance.isOnline)
+        {
+            // for online games
+            OnlineMultiplayerActive.Instance.isOnline = false;
+            MenuManager.Instance.intentionalDisconnect = true;
+            Disconnect();
+            // Network Manager then loads offline scene (DisconnectedScreen)
+            // DisconnectedScreen loads immediately MainMenu (because of "intentionalDisconnect = true")
+        } else
+        {
+            // for offline games
+            SceneManager.LoadSceneAsync("MainMenu");
+        }
     }
 
     public void OpenSettingsMenu()
@@ -148,4 +180,67 @@ public class ButtonController : MonoBehaviour
         AudioManager.Instance.PlayButtonSoundEffect();
         Application.Quit();
     }
+
+
+    // -----------------------------------------------------------------------
+    // ONLINE BUTTON CONTROLLING
+    // -----------------------------------------------------------------------
+
+    public void ConnectForNewGame()
+        // open connection menu for new online game
+    {
+        // reset allMoves.txt
+        File.WriteAllText(Application.persistentDataPath + "/allMoves.txt", "");
+        File.WriteAllText(Application.dataPath + "/allMoves.txt", "");
+
+        // open connection menu
+        AudioManager.Instance.PlayButtonSoundEffect();
+        MenuManager.Instance.gameRunning = true;
+        SceneManager.LoadSceneAsync("ConnectionMenu");
+    }
+
+    public void ConnectForLoadGame()
+        // open connection menu to load an online game
+    {
+        AudioManager.Instance.PlayButtonSoundEffect();
+        MenuManager.Instance.gameRunning = true;
+        MenuManager.Instance.loadGame = true;  // tells BoardManager in GameScene that a savegame shall be loaded
+        SceneManager.LoadSceneAsync("ConnectionMenu");
+    }
+
+    public void LeaveConnectionMenu()
+        // used to go back to main menu from connection menu
+        // also used to go back to main menu from DisconnectedScreen
+    {
+        dontSave = true;  // do not try to save since game was not started at all
+        OnlineMultiplayerActive.Instance.isOnline = false;  // ensures that Disconnect() is not called
+        BackToMainMenu();
+    }
+
+    public void StartAsHost()
+    {
+        NetworkManager.singleton.StartHost();
+    }
+
+    public void JoinAsClient()
+    {
+        NetworkManager.singleton.networkAddress = hostIPAddress.text;
+        NetworkManager.singleton.StartClient();
+    }
+
+    public void Disconnect()
+    {
+        if (NetworkServer.active && NetworkClient.isConnected)
+        {
+            // disconnect host
+            NetworkManager.singleton.StopHost();
+        }
+        else if (NetworkClient.isConnected)
+        {
+            // disconnect client
+            NetworkManager.singleton.StopClient();
+        }
+    }
+
+
 }

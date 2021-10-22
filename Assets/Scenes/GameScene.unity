@@ -4489,6 +4489,7 @@ MonoBehaviour:
   ingameMessagesManager: {fileID: 0}
   onlineMultiplayerManagerObject: {fileID: 1779191730}
   onlineMultiplayerManager: {fileID: 0}
+  connectMenu: {fileID: 0}
 --- !u!4 &953397346
 Transform:
   m_ObjectHideFlags: 0
@@ -7454,10 +7455,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncMode: 0
   syncInterval: 0.1
-  inInitialState: 0
   whiteMoved: 0
   blackMoved: 0
-  lastMovedPiece: {fileID: 0}
+  lastMovedPiece: 
   lastMoveTargetPos: {x: 0, y: 0, z: 0}
   joinedPlayers: 0
   player: 
@@ -8370,9 +8370,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   board: {fileID: 953397344}
-  startMenusAssigned: 0
+  hostIPAddress: {fileID: 0}
   onlineStartMenu: {fileID: 0}
   offlineStartMenu: {fileID: 0}
+  startMenusAssigned: 0
+  dontSave: 0
 --- !u!1 &2106278616
 GameObject:
   m_ObjectHideFlags: 0
