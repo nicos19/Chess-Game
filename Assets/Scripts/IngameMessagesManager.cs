@@ -14,6 +14,7 @@ public class IngameMessagesManager : MonoBehaviour
     }
 
     public void DisplayIngameMessage(IEnumerator newMessage)
+        // display "newMessage"
     {
         boardManager.activeIngameMessage = true;
         boardManager.activeCoroutine = newMessage;
@@ -23,14 +24,14 @@ public class IngameMessagesManager : MonoBehaviour
     }
 
     public void StartNewIngameMessage(GameObject text, float waitTime)
-    // tell BoardManager that a new ERROR ingame message ("text") shall be displayed (and removed from screen after "waitTime" seconds)
+        // tell BoardManager that a new ERROR ingame message ("text") shall be displayed (and removed from screen after "waitTime" seconds)
     {
         AudioManager.Instance.PlayErrorSoundEffect();
         boardManager.newCoroutine = ActivateAndDeactivateMessage(text, waitTime);
     }
 
     private IEnumerator ActivateAndDeactivateMessage(GameObject obj, float waitTime)
-    // this functions activates an object (a displayed text) and deactivates it after a delay of "waitTime" seconds
+        // this functions activates an object (a displayed text) and deactivates it after a delay of "waitTime" seconds
     {
         obj.SetActive(true);
         boardManager.activeText = obj;

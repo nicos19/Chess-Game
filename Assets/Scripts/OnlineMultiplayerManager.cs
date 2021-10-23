@@ -14,13 +14,36 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     [SyncVar]
     public bool whiteMoved, blackMoved;  // whether white or black just did a move
     [SyncVar]
-    public string lastMovedPiece;
+    public string lastMovedPiece;  // last piece that was moved by any player
     [SyncVar]
-    public Vector3 lastMoveTargetPos;
+    public Vector3 lastMoveTargetPos;  // target position of last moved piece
     [SyncVar]
-    public int joinedPlayers;
+    public int joinedPlayers;  // number of joined players (range from 0 to 2)
     
     public string player;  // player associated with this client (server-client is "white", client-2 is "black")
+    public GameObject textWaitForPlayer2;
+    public GameObject textPlayer2Joined;
+    public GameObject textPlayer2Disconnected;
+
+    private void Update()
+    {
+        // only relevant for host player
+        if ((textWaitForPlayer2.activeSelf || textPlayer2Disconnected.activeSelf) && joinedPlayers == 2)
+        {
+            // player2 joined -> update message
+            textWaitForPlayer2.SetActive(false);
+            textPlayer2Disconnected.SetActive(false);
+            textPlayer2Joined.SetActive(true);
+        }
+
+        if (textPlayer2Joined.activeSelf && NetworkServer.connections.Count == 1)
+        {
+            // player2 leaved the game -> update message
+            textPlayer2Joined.SetActive(false);
+            textPlayer2Disconnected.SetActive(true);
+            CmdClientDisconnected();
+        }
+    }
 
     public void OnlineMultiplayerReset()
     {
@@ -33,6 +56,12 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     public void CmdNewClientJoined()
     {
         joinedPlayers += 1;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdClientDisconnected()
+    {
+        joinedPlayers -= 1;
     }
 
     [Command(requiresAuthority = false)]
@@ -79,6 +108,7 @@ public class OnlineMultiplayerManager : NetworkBehaviour
         {
             player = "white";
             CmdNewClientJoined(); //joinedPlayers += 1;
+            textWaitForPlayer2.SetActive(true);  // message that player2 has not joined yet
         } else if (joinedPlayers == 1)
         {
             player = "black";

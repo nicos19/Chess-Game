@@ -10,11 +10,14 @@ public class ButtonController : MonoBehaviour
 {
     // only set in GameScene
     public GameObject board;
-    public InputField hostIPAddress;
 
     // only set in MainMenu
     public GameObject onlineStartMenu;
     public GameObject offlineStartMenu;
+
+    // only set in ConnectionMenu
+    public InputField hostIPAddress;
+    public GameObject connectingScreen;
 
     public bool startMenusAssigned;  // whether "onlineStartMenu" and "offlineStartMenu" are assigned in the inspector
     public bool dontSave = false;  // whether game shall be saved if BackToMainMenu() is called
@@ -219,11 +222,13 @@ public class ButtonController : MonoBehaviour
 
     public void StartAsHost()
     {
+        connectingScreen.SetActive(true);
         NetworkManager.singleton.StartHost();
     }
 
     public void JoinAsClient()
     {
+        connectingScreen.SetActive(true);
         NetworkManager.singleton.networkAddress = hostIPAddress.text;
         NetworkManager.singleton.StartClient();
     }
