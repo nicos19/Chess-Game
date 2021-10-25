@@ -125,7 +125,7 @@ public class ButtonController : MonoBehaviour
         MenuManager.Instance.loadGame = false;
         if (OnlineMultiplayerActive.Instance.isOnline)
         {
-            // for online games
+            // for online games quit by "Back to Main Menu Button"
             OnlineMultiplayerActive.Instance.isOnline = false;
             MenuManager.Instance.intentionalDisconnect = true;
             Disconnect();
@@ -220,6 +220,13 @@ public class ButtonController : MonoBehaviour
         BackToMainMenu();
     }
 
+    public void LeaveAsyncSavegamesErrorScreen()
+        // also used to go back to main menu from asynSavegames error screen in GameScene
+    {
+        dontSave = true;  // do not try to save since game was not started at all
+        BackToMainMenu();
+    }
+
     public void StartAsHost()
     {
         connectingScreen.SetActive(true);
@@ -233,7 +240,7 @@ public class ButtonController : MonoBehaviour
         NetworkManager.singleton.StartClient();
     }
 
-    public void Disconnect()
+    public static void Disconnect()
     {
         if (NetworkServer.active && NetworkClient.isConnected)
         {

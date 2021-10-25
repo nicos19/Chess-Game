@@ -37,6 +37,7 @@ public class MenuManager : MonoBehaviour
         gameRunning = false;
         gamePaused = false;
         loadGame = false;
+        intentionalDisconnect = false;
 
         SceneManager.LoadSceneAsync("TitleScene");
     }

@@ -46,6 +46,7 @@ public class BoardManager : MonoBehaviour
     public IngameMessagesManager ingameMessagesManager;
     public GameObject onlineMultiplayerManagerObject;
     public OnlineMultiplayerManager onlineMultiplayerManager;
+    public GameObject loadingScreen;
 
     private TileBase[] brightTileVariants;
     private TileBase[] darkTileVariants;
@@ -77,18 +78,29 @@ public class BoardManager : MonoBehaviour
         brightTileVariants = new TileBase[] { brightTile, brightTileSelected, brightTileLegalToMove, brightTileCheckSetter, brightTileInCheck, brightTileLastMoveOrigin, brightTileLastMoveTarget, brightTileLastMoveTargetCheckSetter, brightTileLegalToMoveLastMoveOrigin, brightTileLegalToMoveLastMoveTarget, brightTileLegalToMoveCheckSetter, brightTileLegalToMoveLastMoveTargetCheckSetter };
 
         darkTileVariants = new TileBase[] { darkTile, darkTileSelected, darkTileLegalToMove, darkTileCheckSetter, darkTileInCheck, darkTileLastMoveOrigin, darkTileLastMoveTarget, darkTileLastMoveTargetCheckSetter, darkTileLegalToMoveLastMoveOrigin, darkTileLegalToMoveLastMoveTarget, darkTileLegalToMoveCheckSetter, darkTileLegalToMoveLastMoveTargetCheckSetter };
-
-        // load savegame if player clicked Load Game button in main menu
+        
         if (MenuManager.Instance.loadGame)
         {
-            LoadSavegame();
+            loadingScreen.SetActive(true);
         }
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!Object.ReferenceEquals(newCoroutine, null))  // is there a new ingame message to be displayed?
+        // load savegame if player clicked Load Game button in main menu
+        if (MenuManager.Instance.loadGame)
+        {
+            if (OnlineMultiplayerActive.Instance.isOnline && !onlineMultiplayerManagerObject.activeSelf)
+            {
+                return;  // online game, wait until connection has been set properly)
+            }
+            LoadSavegame();
+            loadingScreen.SetActive(false);
+        }
+
+        // is there a new ingame message to be displayed?
+        if (!Object.ReferenceEquals(newCoroutine, null))  
         {
             if (activeIngameMessage)
             {
@@ -106,7 +118,6 @@ public class BoardManager : MonoBehaviour
             }
         }
 
-        
         // when "SPACE" held pressed: highlight last move
         if (Input.GetButtonDown("Show Last Move"))
         {
@@ -730,6 +741,22 @@ public class BoardManager : MonoBehaviour
         FileStream file = File.Open(Application.persistentDataPath + "/savegame.save", FileMode.Open);
         Savegame savegame = (Savegame)bf.Deserialize(file);
         file.Close();
+
+        // for online game
+        if (OnlineMultiplayerActive.Instance.isOnline)
+        {
+            if (onlineMultiplayerManager.isHost)
+            {
+                // host tells player2 which savegame is used by host
+                onlineMultiplayerManager.savegameOfHost = savegame.ToString();
+            }
+            else
+            {
+                // player2 tells host which savegame is used by player2 -> both check for savegame synchronization
+                onlineMultiplayerManager.CmdTellServerPlayer2Savegame(savegame.ToString());
+                onlineMultiplayerManager.CmdCheckSavegameSynchronization();
+            }
+        }
 
         // clear chess board
         occupiedTiles.Clear();

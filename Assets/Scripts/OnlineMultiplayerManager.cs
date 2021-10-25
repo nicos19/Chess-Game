@@ -19,11 +19,20 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     public Vector3 lastMoveTargetPos;  // target position of last moved piece
     [SyncVar]
     public int joinedPlayers;  // number of joined players (range from 0 to 2)
+    [SyncVar]
+    public string savegameOfHost = "savegameOfHost";  // string representation of the host's savegame
+    [SyncVar]
+    public string savegameOfPlayer2 = "savegameOfPlayer2";  // string representation of player2's savegame
+    [SyncVar]
+    public bool checkSavegameSync;  // whether the synchronisation of host's/player2's savegames shall be checked
     
     public string player;  // player associated with this client (server-client is "white", client-2 is "black")
+    public bool isHost;  // is the client also server and therefore host of the game?
     public GameObject textWaitForPlayer2;
     public GameObject textPlayer2Joined;
     public GameObject textPlayer2Disconnected;
+    public GameObject textJoinedSuccessfully;
+    public GameObject asynSavegamesErrorScreen;
 
     private void Update()
     {
@@ -35,13 +44,26 @@ public class OnlineMultiplayerManager : NetworkBehaviour
             textPlayer2Disconnected.SetActive(false);
             textPlayer2Joined.SetActive(true);
         }
-
         if (textPlayer2Joined.activeSelf && NetworkServer.connections.Count == 1)
         {
             // player2 leaved the game -> update message
             textPlayer2Joined.SetActive(false);
             textPlayer2Disconnected.SetActive(true);
             CmdClientDisconnected();
+        }
+
+        // for both host and player2, only for load game
+        if (checkSavegameSync && savegameOfHost != "savegameOfHost" && savegameOfPlayer2 != "savegameOfPlayer2")
+        {
+            if (savegameOfHost == savegameOfPlayer2)
+            {
+                // savegames are synchronized/identical -> game can start
+                checkSavegameSync = false;
+            } else
+            {
+                // savegames are asynchronous -> game is aborted (show asynSavegamesErrorScreen)
+                asynSavegamesErrorScreen.SetActive(true);
+            }
         }
     }
 
@@ -50,6 +72,7 @@ public class OnlineMultiplayerManager : NetworkBehaviour
         whiteMoved = false;
         blackMoved = false;
         joinedPlayers = 0;
+        checkSavegameSync = false;
     }
 
     [Command(requiresAuthority = false)]
@@ -77,6 +100,20 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     {
         lastMovedPiece = piece;
         lastMoveTargetPos = targetPosition;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdTellServerPlayer2Savegame(string savegameString)
+        // tell server what player2's savegame looks like
+    {
+        savegameOfPlayer2 = savegameString;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdCheckSavegameSynchronization()
+        // tells both players that they shall check whether their savegames are identical or not
+    {
+        checkSavegameSync = true;
     }
 
 
@@ -107,12 +144,15 @@ public class OnlineMultiplayerManager : NetworkBehaviour
         if (joinedPlayers == 0)
         {
             player = "white";
+            isHost = true;
             CmdNewClientJoined(); //joinedPlayers += 1;
-            textWaitForPlayer2.SetActive(true);  // message that player2 has not joined yet
+            textWaitForPlayer2.SetActive(true);  // host: message that player2 has not joined yet
         } else if (joinedPlayers == 1)
         {
             player = "black";
+            isHost = false;
             CmdNewClientJoined(); // joinedPlayers += 1;
+            textJoinedSuccessfully.SetActive(true);  // player2: message that the game was joined successfully
         }
     }
 
