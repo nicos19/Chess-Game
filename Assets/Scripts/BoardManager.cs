@@ -37,9 +37,9 @@ public class BoardManager : MonoBehaviour
     public List<GameObject> whitePiecesList, blackPiecesList;  // lists with all white/black pieces on the board
     public GameObject whiteKing, blackKing;
     public Dictionary<Vector2Int, GameObject> occupiedTiles = new Dictionary<Vector2Int, GameObject>();  // (key, value) = (Vector2 tile, GameObject chess piece at tile)
-    public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textNoCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable;
+    public TMP_Text textPieceUnmoveable, textWrongPlayer, textInCheck, textNoCheck, textOwnKingInCheck, textStillOwnKingInCheck, textEnemyNotReachable, textOpponentsTurn;
     public TMP_Text textWhiteWins, textBlackWins, textTie;
-    public GameObject whitesTurn, blacksTurn;
+    public GameObject whitesTurn, blacksTurn, yourTurnWhite, yourTurnBlack, opponentsTurnWhite, opponentsTurnBlack;
     public GameObject spaceForLastMove;
     public GameObject pawnPromotionMenu;
     public GameObject ingameMessages;
@@ -228,6 +228,20 @@ public class BoardManager : MonoBehaviour
             activePlayer = "white";
             whitesTurn.SetActive(true);
             blacksTurn.SetActive(false);
+        }
+    }
+
+    public void SetWhitesTurnBlacksTurn()
+        // for online games: set "whitesTurn" and "blacksTurn" correctly
+    {
+        if (onlineMultiplayerManager.player == "white")
+        {
+            whitesTurn = yourTurnWhite;
+            blacksTurn = opponentsTurnBlack;
+        } else
+        {
+            whitesTurn = opponentsTurnWhite;
+            blacksTurn = yourTurnBlack;
         }
     }
 

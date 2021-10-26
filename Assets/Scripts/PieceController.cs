@@ -64,7 +64,9 @@ public class PieceController : MonoBehaviour
         if (OnlineMultiplayerActive.Instance.isOnline && 
             boardManager.onlineMultiplayerManager.player != boardManager.activePlayer)
         {
-            return;  // online multiplayer active: other player must move next
+            // online multiplayer active: other player must move next
+            boardManager.ingameMessagesManager.StartNewIngameMessage(boardManager.textOpponentsTurn.gameObject, 3);
+            return;
         }
 
         StartCoroutine(WaitSelector());

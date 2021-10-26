@@ -33,6 +33,7 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     public GameObject textPlayer2Disconnected;
     public GameObject textJoinedSuccessfully;
     public GameObject asynSavegamesErrorScreen;
+    public GameObject board;
 
     private void Update()
     {
@@ -147,12 +148,14 @@ public class OnlineMultiplayerManager : NetworkBehaviour
             isHost = true;
             CmdNewClientJoined(); //joinedPlayers += 1;
             textWaitForPlayer2.SetActive(true);  // host: message that player2 has not joined yet
+            board.GetComponent<BoardManager>().SetWhitesTurnBlacksTurn();
         } else if (joinedPlayers == 1)
         {
             player = "black";
             isHost = false;
             CmdNewClientJoined(); // joinedPlayers += 1;
             textJoinedSuccessfully.SetActive(true);  // player2: message that the game was joined successfully
+            board.GetComponent<BoardManager>().SetWhitesTurnBlacksTurn();
         }
     }
 
