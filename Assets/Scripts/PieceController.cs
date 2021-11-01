@@ -401,17 +401,16 @@ public class PieceController : MonoBehaviour
         // other player must move next
         boardManager.ChangeActivePlayer(player);
         boardManager.readyForNextMove = false;  // -> so BoardManager.Update() can check if enemy king is set check/checkmate/tied
+        
         // if online multiplayer active: tell opponent player which move was made
         if (OnlineMultiplayerActive.Instance.isOnline)
         {
             if (player == "white" && boardManager.onlineMultiplayerManager.player == "white")
             {
-                boardManager.onlineMultiplayerManager.CmdSetMovedVariables(true, false);
-                boardManager.onlineMultiplayerManager.CmdTellServerLastMove(gameObject.name, targetPos);
+                boardManager.onlineMultiplayerManager.CmdTellServerLastMoveAll(true, false, gameObject.name, targetPos, boardManager.pawnPromotionMenu.activeSelf);
             } else if (player == "black" && boardManager.onlineMultiplayerManager.player == "black")
             {
-                boardManager.onlineMultiplayerManager.CmdSetMovedVariables(false, true);
-                boardManager.onlineMultiplayerManager.CmdTellServerLastMove(gameObject.name, targetPos);
+                boardManager.onlineMultiplayerManager.CmdTellServerLastMoveAll(false, true, gameObject.name, targetPos, boardManager.pawnPromotionMenu.activeSelf);
             }
         }
         return true;

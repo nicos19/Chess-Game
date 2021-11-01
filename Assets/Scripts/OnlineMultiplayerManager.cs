@@ -20,11 +20,17 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     [SyncVar]
     public int joinedPlayers;  // number of joined players (range from 0 to 2)
     [SyncVar]
+    public bool pawnPromotion;  // whether last move resulted in pawn promotion or not
+    [SyncVar]
+    public string pawnPromotionResult = "";  // to which piece was a pawn promoted? ("Queen", "Rook", "Bishop" or "Knight")
+    [SyncVar]
     public string savegameOfHost = "savegameOfHost";  // string representation of the host's savegame
     [SyncVar]
     public string savegameOfPlayer2 = "savegameOfPlayer2";  // string representation of player2's savegame
     [SyncVar]
     public bool checkSavegameSync;  // whether the synchronisation of host's/player2's savegames shall be checked
+    [SyncVar]
+    public bool isLoadedGame;  // whether the host loaded a game or started a new one
     
     public string player;  // player associated with this client (server-client is "white", client-2 is "black")
     public bool isHost;  // is the client also server and therefore host of the game?
@@ -74,6 +80,8 @@ public class OnlineMultiplayerManager : NetworkBehaviour
         blackMoved = false;
         joinedPlayers = 0;
         checkSavegameSync = false;
+        pawnPromotion = false;
+        isLoadedGame = false;
     }
 
     [Command(requiresAuthority = false)]
@@ -89,18 +97,16 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     }
 
     [Command(requiresAuthority = false)]
-    public void CmdSetMovedVariables(bool moveByWhite, bool moveByBlack)
+    public void CmdTellServerLastMoveAll(bool moveByWhite, bool moveByBlack, string piece, Vector3 targetPosition, bool moveWithPawnPromotion)
+        // tells server all required information about the move that was just executed
     {
         whiteMoved = moveByWhite;
         blackMoved = moveByBlack;
-    }
 
-    [Command(requiresAuthority = false)]
-    public void CmdTellServerLastMove(string piece, Vector3 targetPosition)
-        // tells server which moved was just executed
-    {
         lastMovedPiece = piece;
         lastMoveTargetPos = targetPosition;
+
+        pawnPromotion = moveWithPawnPromotion;
     }
 
     [Command(requiresAuthority = false)]
@@ -115,6 +121,26 @@ public class OnlineMultiplayerManager : NetworkBehaviour
         // tells both players that they shall check whether their savegames are identical or not
     {
         checkSavegameSync = true;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdTellServerPawnPromotionResult(string tagOfNewPiece)
+        // tells server the result ("tagOfNewPiece") of the pawn promotion of the last move
+    {
+        pawnPromotionResult = tagOfNewPiece;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdResetPawnPromotion()
+    {
+        pawnPromotion = false;
+        pawnPromotionResult = "";
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdSetIsLoadedGame()
+    {
+        isLoadedGame = true;
     }
 
 

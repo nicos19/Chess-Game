@@ -50,6 +50,8 @@ public class BoardManager : MonoBehaviour
 
     private TileBase[] brightTileVariants;
     private TileBase[] darkTileVariants;
+    private bool savegameLoaded;  // whether a savegame has been loaded or not yet
+    private int loadSavegameCalledAtFrame;  // frame when "LoadSavegame" was called
 
     // Start is called before the first frame update
     void Start()
@@ -83,6 +85,8 @@ public class BoardManager : MonoBehaviour
         {
             loadingScreen.SetActive(true);
         }
+
+        savegameLoaded = false;
     }
 
     // Update is called once per frame
@@ -97,6 +101,15 @@ public class BoardManager : MonoBehaviour
             }
             LoadSavegame();
             loadingScreen.SetActive(false);
+        } else
+        {
+            // for only game only
+            if (onlineMultiplayerManagerObject.activeSelf && onlineMultiplayerManager.isLoadedGame && !savegameLoaded)
+            {
+                // host loaded savegame but player2 tries to start a new game -> disconnect (only player2)
+                ButtonController.Disconnect();
+                return;
+            }
         }
 
         // is there a new ingame message to be displayed?
@@ -204,6 +217,19 @@ public class BoardManager : MonoBehaviour
             if ((onlineMultiplayerManager.player == "white" && onlineMultiplayerManager.blackMoved) || 
                 (onlineMultiplayerManager.player == "black" && onlineMultiplayerManager.whiteMoved))
             {
+                if (MenuManager.Instance.loadGame || (savegameLoaded && (Time.frameCount - loadSavegameCalledAtFrame) < 10))
+                {
+                    // online game is a loaded game and savegame must still be loaded
+                    // remark: "|| (savegameLoaded && ...)" is there to ensure that enough time elapsed to execute all instantiate/destroy calls in "LoadSavegame"
+                    return;  // -> wait until savegame is loaded
+                }
+
+                if (onlineMultiplayerManager.pawnPromotion && onlineMultiplayerManager.pawnPromotionResult == "")
+                {
+                    // opponent made pawn promotion move, but has not chosen promotion yet
+                    return;  // -> wait until opponent chose in the promotion menu
+                }
+
                 onlineMultiplayerManager.whiteMoved = false;
                 onlineMultiplayerManager.blackMoved = false;
 
@@ -211,6 +237,13 @@ public class BoardManager : MonoBehaviour
                 GameObject opponentPiece = GameObject.Find(onlineMultiplayerManager.lastMovedPiece);
                 Vector3 opponentTargetPos = onlineMultiplayerManager.lastMoveTargetPos;
                 opponentPiece.GetComponent<PieceController>().TryMove(opponentTargetPos);
+
+                if (onlineMultiplayerManager.pawnPromotion)
+                {
+                    // execute actual pawn promotion based on choice of opponent
+                    pawnPromotionMenu.GetComponent<ClickToPromotePawn>().PawnToPieceByTag(onlineMultiplayerManager.pawnPromotionResult);
+                    onlineMultiplayerManager.CmdResetPawnPromotion();
+                }
             }
         }
     }
@@ -236,10 +269,30 @@ public class BoardManager : MonoBehaviour
     {
         if (onlineMultiplayerManager.player == "white")
         {
+            if (whitesTurn.activeSelf)
+            {
+                whitesTurn.SetActive(false);
+                yourTurnWhite.SetActive(true);
+            } else
+            {
+                blacksTurn.SetActive(false);
+                opponentsTurnBlack.SetActive(true);
+            }
+
             whitesTurn = yourTurnWhite;
             blacksTurn = opponentsTurnBlack;
         } else
         {
+            if (whitesTurn.activeSelf)
+            {
+                whitesTurn.SetActive(false);
+                opponentsTurnWhite.SetActive(true);
+            } else
+            {
+                blacksTurn.SetActive(false);
+                yourTurnBlack.SetActive(true);
+            }
+
             whitesTurn = opponentsTurnWhite;
             blacksTurn = yourTurnBlack;
         }
@@ -761,11 +814,19 @@ public class BoardManager : MonoBehaviour
         {
             if (onlineMultiplayerManager.isHost)
             {
+                onlineMultiplayerManager.CmdSetIsLoadedGame();  // remember that a savegame was loaded
                 // host tells player2 which savegame is used by host
                 onlineMultiplayerManager.savegameOfHost = savegame.ToString();
             }
             else
             {
+                if (!onlineMultiplayerManager.isLoadedGame)
+                {
+                    // disconnect since host started a new game but player2 tries to load a savegame
+                    ButtonController.Disconnect();
+                    return;
+                }
+
                 // player2 tells host which savegame is used by player2 -> both check for savegame synchronization
                 onlineMultiplayerManager.CmdTellServerPlayer2Savegame(savegame.ToString());
                 onlineMultiplayerManager.CmdCheckSavegameSynchronization();
@@ -813,6 +874,8 @@ public class BoardManager : MonoBehaviour
 
         readyForNextMove = false;
         MenuManager.Instance.loadGame = false;
+        savegameLoaded = true;
+        loadSavegameCalledAtFrame = Time.frameCount;
     }
 
 }

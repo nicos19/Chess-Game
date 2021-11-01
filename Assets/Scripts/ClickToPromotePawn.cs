@@ -65,6 +65,27 @@ public class ClickToPromotePawn : MonoBehaviour
         }
     }
 
+    public void PawnToPieceByTag(string newPieceTag)
+    {
+        switch (newPieceTag)
+        {
+            case "Queen":
+                PawnToQueen();
+                break;
+            case "Rook":
+                PawnToRook();
+                break;
+            case "Knight":
+                PawnToKnight();
+                break;
+            case "Bishop":
+                PawnToBishop();
+                break;
+            default:
+                throw new System.ArgumentException("unknown 'newPieceTag'");
+        }
+    }
+
     public void PawnToX(GameObject prefabPiece, string player)
         // promote pawn that reached board end to new game object using "prefabPiece"
     {
@@ -106,6 +127,17 @@ public class ClickToPromotePawn : MonoBehaviour
         MenuManager.Instance.gamePaused = false;
 
         AudioManager.Instance.PlayButtonSoundEffect();
+
+        // for only games only
+        if (OnlineMultiplayerActive.Instance.isOnline)
+        {
+            OnlineMultiplayerManager onlineMultiplayerManager = board.GetComponent<BoardManager>().onlineMultiplayerManager;
+            if (onlineMultiplayerManager.player == player)
+            {
+                // tell opponent which promotion was chosen
+                onlineMultiplayerManager.CmdTellServerPawnPromotionResult(prefabPiece.tag);
+            }
+        }
     }
 
     public void InitializePiece(GameObject newPiece, string player)

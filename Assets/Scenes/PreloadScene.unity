@@ -1632,9 +1632,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   board: {fileID: 0}
-  hostIPAddress: {fileID: 0}
   onlineStartMenu: {fileID: 0}
   offlineStartMenu: {fileID: 0}
+  hostIPAddress: {fileID: 0}
+  connectingScreen: {fileID: 0}
   startMenusAssigned: 0
   dontSave: 0
 --- !u!1 &961173763
@@ -3634,7 +3635,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6442dc8070ceb41f094e44de0bf87274, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  showGUI: 1
+  showGUI: 0
   offsetX: 0
   offsetY: 200
 --- !u!114 &1745148361
