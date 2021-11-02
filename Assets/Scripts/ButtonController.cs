@@ -23,6 +23,7 @@ public class ButtonController : MonoBehaviour
     public bool startMenusAssigned;  // whether "onlineStartMenu" and "offlineStartMenu" are assigned in the inspector
     public bool dontSave = false;  // whether game shall be saved if BackToMainMenu() is called
     public bool waitForDisconnect = false;  // true if this player is waiting for player2 before disconnecting itself
+    private bool asyncSavegamesFound = false;  // whether an online loaded game is just aborted because of asynchronous savegames
 
 
     // Update is called once per frame
@@ -109,14 +110,14 @@ public class ButtonController : MonoBehaviour
 
     public void BackToMainMenu()
     {
-        if (MenuManager.Instance.gamePaused)
+        if (MenuManager.Instance.gamePaused && !asyncSavegamesFound)
         {
             // pawn promotion menu / settings menu is open -> do not go back to main menu
             return;
         }
 
         // when opponent has an open pawn promotion menu
-        if (OnlineMultiplayerActive.Instance.isOnline && board.GetComponent<BoardManager>().onlineMultiplayerManager.activePawnPromotion)
+        if (OnlineMultiplayerActive.Instance.isOnline && board.GetComponent<BoardManager>().onlineMultiplayerManager.activePawnPromotion && !asyncSavegamesFound)
         {
             // player must wait until opponent has completed its pawn promotion
             activePawnPromotionErrorScreen.SetActive(true);
@@ -129,7 +130,7 @@ public class ButtonController : MonoBehaviour
         if (OnlineMultiplayerActive.Instance.isOnline && !waitForDisconnect)
         {
             OnlineMultiplayerManager onlineMultiplayerManager = board.GetComponent<BoardManager>().onlineMultiplayerManager;
-            if (onlineMultiplayerManager.isHost && NetworkServer.connections.Count == 2)
+            if (onlineMultiplayerManager.isHost && NetworkServer.connections.Count == 2 && !onlineMultiplayerManager.asynSavegamesErrorScreen.activeSelf)
             {
                 // host wants to leave game while player2 is still connected -> tell player2 to save game and disconnect first
                 onlineMultiplayerManager.CmdPlayer2ShallSave();
@@ -262,6 +263,7 @@ public class ButtonController : MonoBehaviour
         // used to go back to main menu from asynSavegames error screen in GameScene
     {
         dontSave = true;  // do not try to save since game was not started at all
+        asyncSavegamesFound = true;
         BackToMainMenu();
     }
 

@@ -74,6 +74,7 @@ public class OnlineMultiplayerManager : NetworkBehaviour
             {
                 // savegames are asynchronous -> game is aborted (show asynSavegamesErrorScreen)
                 asynSavegamesErrorScreen.SetActive(true);
+                MenuManager.Instance.gamePaused = true;
             }
         }
 
@@ -102,6 +103,13 @@ public class OnlineMultiplayerManager : NetworkBehaviour
         // for host when player2 disconnected
         if (isHost && !buttonController.waitForDisconnect && textPlayer2Joined.activeSelf && NetworkServer.connections.Count == 1)
         {
+            if (asynSavegamesErrorScreen.activeSelf)
+            {
+                // game is aborted because of asynchronous savegames -> host stays at AsyncSavegames Error Screen even if player2 disconnects now
+                // host disconnects as soon as the host player clicks on "Back to Main Menu" Button
+                return;
+            }
+
             if (activePawnPromotion)
             {
                 // this player has an open pawn promotion menu
