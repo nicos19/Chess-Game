@@ -31,8 +31,12 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     public bool checkSavegameSync;  // whether the synchronisation of host's/player2's savegames shall be checked
     [SyncVar]
     public bool isLoadedGame;  // whether the host loaded a game or started a new one
+    [SyncVar]
+    public bool player2ShallSave;  // true: tells player2 that he shall save and disconnect afterwards
+    [SyncVar]
+    public bool activePawnPromotion;  // whether any player has an open pawn promotion menu
     
-    public string player;  // player associated with this client (server-client is "white", client-2 is "black")
+    public string player;  // player associated with this client (server-client/host is "white", client-2/player2 is "black")
     public bool isHost;  // is the client also server and therefore host of the game?
     public GameObject textWaitForPlayer2;
     public GameObject textPlayer2Joined;
@@ -40,23 +44,23 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     public GameObject textJoinedSuccessfully;
     public GameObject asynSavegamesErrorScreen;
     public GameObject board;
+    public GameObject buttonControllerObject;
+    public ButtonController buttonController;
+
+    private void Start()
+    {
+        buttonController = buttonControllerObject.GetComponent<ButtonController>();
+    }
 
     private void Update()
     {
         // only relevant for host player
-        if ((textWaitForPlayer2.activeSelf || textPlayer2Disconnected.activeSelf) && joinedPlayers == 2)
+        if ((textWaitForPlayer2.activeSelf) && NetworkServer.connections.Count == 2)
         {
             // player2 joined -> update message
             textWaitForPlayer2.SetActive(false);
             textPlayer2Disconnected.SetActive(false);
             textPlayer2Joined.SetActive(true);
-        }
-        if (textPlayer2Joined.activeSelf && NetworkServer.connections.Count == 1)
-        {
-            // player2 leaved the game -> update message
-            textPlayer2Joined.SetActive(false);
-            textPlayer2Disconnected.SetActive(true);
-            CmdClientDisconnected();
         }
 
         // for both host and player2, only for load game
@@ -71,6 +75,43 @@ public class OnlineMultiplayerManager : NetworkBehaviour
                 // savegames are asynchronous -> game is aborted (show asynSavegamesErrorScreen)
                 asynSavegamesErrorScreen.SetActive(true);
             }
+        }
+
+        // for player2 when host initiates disconnect
+        if (!isHost && player2ShallSave)
+        {
+            if (activePawnPromotion)
+            {
+                // this player has an open pawn promotion menu
+                ButtonController.Disconnect();  // disconnect without saving (saving would not work properly with open pawn promotion menu)
+                return;
+            }
+
+            // player2 saves and disconnects afterwards
+            MenuManager.Instance.player2DisconnectedThroughHost = true;
+            buttonController.SaveAndDisconnect();
+        }
+
+        // for host when host initiated disconnect (and has been waiting for player2's disconnect first)
+        if (isHost && buttonController.waitForDisconnect && NetworkServer.connections.Count == 1)
+        {
+            // player2 has saved and disconnected -> host can save and disconnect too
+            buttonController.BackToMainMenu();
+        }
+
+        // for host when player2 disconnected
+        if (isHost && !buttonController.waitForDisconnect && textPlayer2Joined.activeSelf && NetworkServer.connections.Count == 1)
+        {
+            if (activePawnPromotion)
+            {
+                // this player has an open pawn promotion menu
+                ButtonController.Disconnect();  // disconnect without saving (saving would not work properly with open pawn promotion menu)
+                return;
+            }
+
+            // host disconnects, too (and saves previously)
+            MenuManager.Instance.hostDisconnectedThroughPlayer2 = true;
+            buttonController.SaveAndDisconnect();
         }
     }
 
@@ -141,6 +182,18 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     public void CmdSetIsLoadedGame()
     {
         isLoadedGame = true;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdPlayer2ShallSave()
+    {
+        player2ShallSave = true;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdSetActivePawnPromotion(bool activePawnPromotionNow)
+    {
+        activePawnPromotion = activePawnPromotionNow;
     }
 
 

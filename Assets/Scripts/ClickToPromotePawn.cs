@@ -137,6 +137,7 @@ public class ClickToPromotePawn : MonoBehaviour
                 // tell opponent which promotion was chosen
                 onlineMultiplayerManager.CmdTellServerPawnPromotionResult(prefabPiece.tag);
             }
+            onlineMultiplayerManager.CmdSetActivePawnPromotion(false);  // tell opponent that pawn promotion menu is closed
         }
     }
 

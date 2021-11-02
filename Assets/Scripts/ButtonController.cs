@@ -10,7 +10,7 @@ public class ButtonController : MonoBehaviour
 {
     // only set in GameScene
     public GameObject board;
-    public GameObject disconnectClientWarning;
+    public GameObject activePawnPromotionErrorScreen;
 
     // only set in MainMenu
     public GameObject onlineStartMenu;
@@ -22,7 +22,7 @@ public class ButtonController : MonoBehaviour
 
     public bool startMenusAssigned;  // whether "onlineStartMenu" and "offlineStartMenu" are assigned in the inspector
     public bool dontSave = false;  // whether game shall be saved if BackToMainMenu() is called
-    private bool disconnectClientWarningActive = false;  // whether the Disconnect Client Warning in GameScene is active currently
+    public bool waitForDisconnect = false;  // true if this player is waiting for player2 before disconnecting itself
 
 
     // Update is called once per frame
@@ -109,22 +109,33 @@ public class ButtonController : MonoBehaviour
 
     public void BackToMainMenu()
     {
-        if (MenuManager.Instance.gamePaused && !disconnectClientWarningActive)
+        if (MenuManager.Instance.gamePaused)
         {
             // pawn promotion menu / settings menu is open -> do not go back to main menu
             return;
         }
 
-        if (OnlineMultiplayerActive.Instance.isOnline && !disconnectClientWarning.activeSelf)
+        // when opponent has an open pawn promotion menu
+        if (OnlineMultiplayerActive.Instance.isOnline && board.GetComponent<BoardManager>().onlineMultiplayerManager.activePawnPromotion)
+        {
+            // player must wait until opponent has completed its pawn promotion
+            activePawnPromotionErrorScreen.SetActive(true);
+            MenuManager.Instance.gamePaused = true;
+            AudioManager.Instance.PlayButtonSoundEffect();
+            return;
+        }
+
+        // for host of only game only
+        if (OnlineMultiplayerActive.Instance.isOnline && !waitForDisconnect)
         {
             OnlineMultiplayerManager onlineMultiplayerManager = board.GetComponent<BoardManager>().onlineMultiplayerManager;
-            if (onlineMultiplayerManager.isHost && onlineMultiplayerManager.joinedPlayers == 2)
+            if (onlineMultiplayerManager.isHost && NetworkServer.connections.Count == 2)
             {
-                // host wants to leave game while player2 is still connected -> show "Disconnect Client Warning"
-                disconnectClientWarning.SetActive(true);
-                disconnectClientWarningActive = true;
+                // host wants to leave game while player2 is still connected -> tell player2 to save game and disconnect first
+                onlineMultiplayerManager.CmdPlayer2ShallSave();
+                waitForDisconnect = true;  // remember that host is waiting until player2 saved and disconnected before host's own disconnect
                 AudioManager.Instance.PlayButtonSoundEffect();
-                MenuManager.Instance.gamePaused = true;
+                board.GetComponent<BoardManager>().loadingScreen.SetActive(true);
                 return;
             }
         }
@@ -136,7 +147,10 @@ public class ButtonController : MonoBehaviour
         }
         
         // back to main menu
-        AudioManager.Instance.PlayButtonSoundEffect();
+        if (!MenuManager.Instance.player2DisconnectedThroughHost && !MenuManager.Instance.hostDisconnectedThroughPlayer2 && !waitForDisconnect)
+        {
+            AudioManager.Instance.PlayButtonSoundEffect();
+        }
         MenuManager.Instance.gameRunning = false;
         MenuManager.Instance.gamePaused = false;
         MenuManager.Instance.loadGame = false;
@@ -155,11 +169,9 @@ public class ButtonController : MonoBehaviour
         }
     }
 
-    public void CloseDisconnectClientWarning()
-        // closes Disconnect Client Warning (in GameScene) -> goes back to game
+    public void CloseActivePawnPromotionErrorScreen()
     {
-        disconnectClientWarning.SetActive(false);
-        disconnectClientWarningActive = false;
+        activePawnPromotionErrorScreen.SetActive(false);
         MenuManager.Instance.gamePaused = false;
         AudioManager.Instance.PlayButtonSoundEffect();
     }
@@ -269,7 +281,13 @@ public class ButtonController : MonoBehaviour
     }
 
     public static void Disconnect()
+        // disconnect from online game
     {
+        MenuManager.Instance.gameRunning = false;
+        MenuManager.Instance.gamePaused = false;
+        MenuManager.Instance.loadGame = false;
+        OnlineMultiplayerActive.Instance.isOnline = false;
+
         if (NetworkServer.active && NetworkClient.isConnected)
         {
             // disconnect host
@@ -280,6 +298,15 @@ public class ButtonController : MonoBehaviour
             // disconnect client
             NetworkManager.singleton.StopClient();
         }
+    }
+
+    public void SaveAndDisconnect()
+    {
+        // save the game
+        board.GetComponent<BoardManager>().CreateSavegameFile();
+        
+        Disconnect();
+        // Network Manager then loads offline scene (DisconnectedScreen)
     }
 
 

@@ -469,6 +469,12 @@ public class PieceController : MonoBehaviour
         boardManager.pawnPromotionMenu.SetActive(true);  // open menu to select promotion for pawn
         boardManager.pawnPromotionMenu.GetComponent<ClickToPromotePawn>().pawnToPromote = piece;
         MenuManager.Instance.gamePaused = true;
+
+        if (OnlineMultiplayerActive.Instance.isOnline)
+        {
+            // tell server that this player has an open pawn promotion menu
+            boardManager.onlineMultiplayerManager.CmdSetActivePawnPromotion(true);
+        }
     }
 
     private bool IsPromotionTile(Vector2Int tile, string player)
