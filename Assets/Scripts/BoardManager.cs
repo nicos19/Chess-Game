@@ -103,7 +103,12 @@ public class BoardManager : MonoBehaviour
             loadingScreen.SetActive(false);
         } else
         {
-            // for only game only
+            // for online, newly started game only
+            if (onlineMultiplayerManagerObject.activeSelf && !onlineMultiplayerManager.isHost && !onlineMultiplayerManager.newGameReady && !savegameLoaded && !onlineMultiplayerManager.isLoadedGame)
+            {
+                onlineMultiplayerManager.CmdSetNewGameReady();  // tell host that the new game is ready for playing
+            }
+            // for online game only
             if (onlineMultiplayerManagerObject.activeSelf && onlineMultiplayerManager.isLoadedGame && !savegameLoaded)
             {
                 // host loaded savegame but player2 tries to start a new game -> disconnect (only player2)

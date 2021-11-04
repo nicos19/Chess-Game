@@ -35,6 +35,10 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     public bool player2ShallSave;  // true: tells player2 that he shall save and disconnect afterwards
     [SyncVar]
     public bool activePawnPromotion;  // whether any player has an open pawn promotion menu
+    [SyncVar]
+    public bool newGameReady;  // true if a new game is ready for playing for both players
+    [SyncVar]
+    public bool loadedGameReady;  // true if a loaded game is ready for playing for both players
     
     public string player;  // player associated with this client (server-client/host is "white", client-2/player2 is "black")
     public bool isHost;  // is the client also server and therefore host of the game?
@@ -55,21 +59,24 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     private void Update()
     {
         // only relevant for host player
-        if ((textWaitForPlayer2.activeSelf) && NetworkServer.connections.Count == 2)
+        if ((textWaitForPlayer2.activeSelf) && NetworkServer.connections.Count == 2 && (newGameReady || loadedGameReady))
         {
-            // player2 joined -> update message
+            // player2 joined (and game is ready for playing) -> update message
             textWaitForPlayer2.SetActive(false);
             textPlayer2Disconnected.SetActive(false);
             textPlayer2Joined.SetActive(true);
         }
 
         // for both host and player2, only for load game
-        if (checkSavegameSync && savegameOfHost != "savegameOfHost" && savegameOfPlayer2 != "savegameOfPlayer2")
+        if (checkSavegameSync && savegameOfHost != "savegameOfHost" && savegameOfPlayer2 != "savegameOfPlayer2" && !loadedGameReady)
         {
             if (savegameOfHost == savegameOfPlayer2)
             {
                 // savegames are synchronized/identical -> game can start
-                checkSavegameSync = false;
+                if (!isHost)
+                {
+                    CmdSetLoadedGameReady();  // tell host that the loaded game is ready for playing
+                }
             } else
             {
                 // savegames are asynchronous -> game is aborted (show asynSavegamesErrorScreen)
@@ -131,6 +138,8 @@ public class OnlineMultiplayerManager : NetworkBehaviour
         checkSavegameSync = false;
         pawnPromotion = false;
         isLoadedGame = false;
+        newGameReady = false;
+        loadedGameReady = false;
     }
 
     [Command(requiresAuthority = false)]
@@ -202,6 +211,18 @@ public class OnlineMultiplayerManager : NetworkBehaviour
     public void CmdSetActivePawnPromotion(bool activePawnPromotionNow)
     {
         activePawnPromotion = activePawnPromotionNow;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdSetNewGameReady()
+    {
+        newGameReady = true;
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdSetLoadedGameReady()
+    {
+        loadedGameReady = true;
     }
 
 
