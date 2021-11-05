@@ -276,6 +276,12 @@ public class ButtonController : MonoBehaviour
 
     public void JoinAsClient()
     {
+        if (string.IsNullOrEmpty(hostIPAddress.text))
+        {
+            Debug.Log("Must set the Network Address field in the manager");
+            return;
+        }
+
         AudioManager.Instance.PlayButtonSoundEffect();
         connectingScreen.SetActive(true);
         NetworkManager.singleton.networkAddress = hostIPAddress.text;
